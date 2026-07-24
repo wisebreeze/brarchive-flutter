@@ -293,7 +293,8 @@ Future<_IsolateResult> _packIsolateImpl(_PackParams params) async {
   final sortedKeys = newFiles.keys.toList()..sort();
   for (final name in sortedKeys) {
     final data = newFiles[name]!;
-    outArchive.addFile(ArchiveFile(name, data.length, data));
+    final content = List<int>.from(data);
+    outArchive.addFile(ArchiveFile(name, content.length, content));
   }
   final outPath = _uniqueOutputPath(params.inputPath, params.outputDir, suffix: '_packed');
   await File(outPath).writeAsBytes(Uint8List.fromList(ZipEncoder().encode(outArchive)!));
@@ -399,7 +400,11 @@ Future<_IsolateResult> _unpackIsolateImpl(_UnpackParams params) async {
   final sortedKeys = newFiles.keys.toList()..sort();
   for (final name in sortedKeys) {
     final data = newFiles[name]!;
-    outArchive.addFile(ArchiveFile(name, data.length, data));
+    // Deep-copy the content as a plain List<int> to ensure the archive
+    // package can read it reliably. Uint8List views can become invalid
+    // after isolate transfers or GC, causing 0-byte output.
+    final content = List<int>.from(data);
+    outArchive.addFile(ArchiveFile(name, content.length, content));
   }
   final outPath = _uniqueOutputPath(params.inputPath, params.outputDir, suffix: '_unpacked');
   await File(outPath).writeAsBytes(Uint8List.fromList(ZipEncoder().encode(outArchive)!));
