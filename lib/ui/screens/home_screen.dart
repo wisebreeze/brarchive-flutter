@@ -156,9 +156,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final cs = Theme.of(context).colorScheme;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(
+          message,
+          style: TextStyle(
+            color: isError ? cs.onErrorContainer : cs.onPrimaryContainer,
+          ),
+        ),
         backgroundColor: isError ? cs.errorContainer : cs.primaryContainer,
-        foregroundColor: isError ? cs.onErrorContainer : cs.onPrimaryContainer,
       ),
     );
   }

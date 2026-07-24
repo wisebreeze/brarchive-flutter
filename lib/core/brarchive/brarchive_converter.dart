@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:path/path.dart' as p;
 
@@ -302,7 +303,7 @@ class BrarchiveConverter {
     final archive = Archive();
     final sortedKeys = files.keys.toList()..sort();
     for (final name in sortedKeys) {
-      archive.addFile(ArchiveFile.bytes(name, files[name]!));
+      archive.addFile(ArchiveFile(name, files[name]!.length, files[name]!));
     }
     return archive;
   }
