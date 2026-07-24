@@ -61,5 +61,8 @@
   "permissionMessage": "此应用需要存储权限才能访问所选文件或目录。请在系统设置中授予权限。",
   "cancel": "取消",
   "grant": "授予",
-  "errPermissionDenied": "存储权限被拒绝，无法继续。"
+  "errPermissionDenied": "存储权限被拒绝，无法继续。",
+  "author": "作者",
+  "license": "许可证",
+  "close": "关闭"
 }

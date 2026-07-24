@@ -164,4 +164,7 @@ const Map<String, String> _fallbackEn = {
   'cancel': 'Cancel',
   'grant': 'Grant',
   'errPermissionDenied': 'Storage permission denied. Cannot proceed.',
+  'author': 'Author',
+  'license': 'License',
+  'close': 'Close',
 };

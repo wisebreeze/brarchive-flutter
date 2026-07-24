@@ -61,5 +61,8 @@
   "permissionMessage": "This app needs storage permission to access the selected file or directory. Please grant the permission in system settings.",
   "cancel": "Cancel",
   "grant": "Grant",
-  "errPermissionDenied": "Storage permission denied. Cannot proceed."
+  "errPermissionDenied": "Storage permission denied. Cannot proceed.",
+  "author": "Author",
+  "license": "License",
+  "close": "Close"
 }

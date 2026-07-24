@@ -292,7 +292,8 @@ Future<_IsolateResult> _packIsolateImpl(_PackParams params) async {
   final outArchive = Archive();
   final sortedKeys = newFiles.keys.toList()..sort();
   for (final name in sortedKeys) {
-    outArchive.addFile(ArchiveFile(name, newFiles[name]!.length, newFiles[name]!));
+    final data = Uint8List.fromList(newFiles[name]!);
+    outArchive.addFile(ArchiveFile.bytes(name, data));
   }
   final outPath = _uniqueOutputPath(params.inputPath, params.outputDir, suffix: '_packed');
   await File(outPath).writeAsBytes(Uint8List.fromList(ZipEncoder().encode(outArchive)!));
@@ -356,22 +357,33 @@ Future<_IsolateResult> _unpackIsolateImpl(_UnpackParams params) async {
 
     final restored = BrarchiveCodec.deserialize(entry.value);
 
-    // The parent of __brarchive is where files should be restored
+    // The parent of __brarchive is where files should be restored.
+    // If __brarchive is at the archive root, parent is '' (root).
     final parentOfBrarchive = p.dirname(brarchiveDir);
+    final parentIsRoot = parentOfBrarchive == '.' || parentOfBrarchive.isEmpty;
 
     // The relative path of the .brarchive file inside __brarchive/
     // determines the target subdirectory.
     final relInBrarchive = p.relative(brarchivePath, from: brarchiveDir);
     final targetRelDir = p.withoutExtension(relInBrarchive);
+    final targetRelDirIsRoot = targetRelDir == '.' || targetRelDir.isEmpty;
 
-    final targetDir = targetRelDir == '.'
-        ? parentOfBrarchive
-        : '$parentOfBrarchive/$targetRelDir';
+    // Build the target directory without producing '.' or empty segments
+    String targetDir;
+    if (parentIsRoot && targetRelDirIsRoot) {
+      targetDir = ''; // restore to archive root
+    } else if (parentIsRoot) {
+      targetDir = targetRelDir; // e.g. "ui"
+    } else if (targetRelDirIsRoot) {
+      targetDir = parentOfBrarchive; // e.g. "subpacks/light"
+    } else {
+      targetDir = '$parentOfBrarchive/$targetRelDir';
+    }
 
     for (final r in restored.entries) {
       final restorePath = targetDir.isEmpty ? r.key : '$targetDir/${r.key}';
       logs.add('Writing $restorePath (${r.value.length} bytes)');
-      newFiles[restorePath] = r.value;
+      newFiles[restorePath] = Uint8List.fromList(r.value);
     }
     logs.add('Restored ${restored.length} file(s)');
   }
@@ -386,7 +398,8 @@ Future<_IsolateResult> _unpackIsolateImpl(_UnpackParams params) async {
   final outArchive = Archive();
   final sortedKeys = newFiles.keys.toList()..sort();
   for (final name in sortedKeys) {
-    outArchive.addFile(ArchiveFile(name, newFiles[name]!.length, newFiles[name]!));
+    final data = Uint8List.fromList(newFiles[name]!);
+    outArchive.addFile(ArchiveFile.bytes(name, data));
   }
   final outPath = _uniqueOutputPath(params.inputPath, params.outputDir, suffix: '_unpacked');
   await File(outPath).writeAsBytes(Uint8List.fromList(ZipEncoder().encode(outArchive)!));
