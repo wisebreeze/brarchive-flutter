@@ -167,4 +167,9 @@ const Map<String, String> _fallbackEn = {
   'author': 'Author',
   'license': 'License',
   'close': 'Close',
+  'packOptions': 'Pack options',
+  'packImages': 'Pack images',
+  'packImagesDesc': 'Include .png/.jpg/.jpeg/.tga files in brarchive (default: off)',
+  'removeProcessedFiles': 'Delete original files',
+  'removeProcessedFilesDesc': 'Remove source files after packing into brarchive (default: on)',
 };

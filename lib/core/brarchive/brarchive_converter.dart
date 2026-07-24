@@ -14,17 +14,32 @@ class ConverterConfig {
   final List<String> excludeFiles;
   final String outputDir;
 
+  /// Whether to also pack image files (.png, .jpg, .jpeg, .tga) into brarchive.
+  /// Default: false (images stay as loose files).
+  final bool packImages;
+
+  /// Whether to delete original files after packing them into brarchive.
+  /// Default: true (mirrors brarchive-go's remove_processed_files).
+  final bool removeProcessedFiles;
+
   const ConverterConfig({
     this.includeExts = const ['.json', '.json5', '.ui'],
     this.excludeDirs = const ['textures', 'materials', 'texts', 'sounds'],
     this.specialFolders = const ['subpacks'],
     this.excludeFiles = const ['ui/_global_variables.json'],
     this.outputDir = '__brarchive',
+    this.packImages = false,
+    this.removeProcessedFiles = true,
   });
 
   bool isTargetExtension(String ext) {
     final lower = ext.toLowerCase();
-    return includeExts.any((e) => e.toLowerCase() == lower);
+    if (includeExts.any((e) => e.toLowerCase() == lower)) return true;
+    if (packImages) {
+      const imageExts = ['.png', '.jpg', '.jpeg', '.tga'];
+      return imageExts.contains(lower);
+    }
+    return false;
   }
 
   bool isExcludedFolder(String name) {
@@ -261,12 +276,17 @@ Future<_IsolateResult> _packIsolateImpl(_PackParams params) async {
   // add __brarchive/*.brarchive entries.
   final newFiles = Map<String, Uint8List>.from(files);
 
-  // Remove original target files
-  for (final dirEntry in byDir.entries) {
-    for (final fileName in dirEntry.value.keys) {
-      final fullPath = '${dirEntry.key}/$fileName';
-      newFiles.remove(fullPath);
+  // Remove original target files (if removeProcessedFiles is enabled)
+  if (config.removeProcessedFiles) {
+    for (final dirEntry in byDir.entries) {
+      for (final fileName in dirEntry.value.keys) {
+        final fullPath = '${dirEntry.key}/$fileName';
+        newFiles.remove(fullPath);
+      }
     }
+    logs.add('Removed original target files');
+  } else {
+    logs.add('Keeping original target files (removeProcessedFiles=false)');
   }
 
   // Create brarchive files

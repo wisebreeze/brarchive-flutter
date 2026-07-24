@@ -36,6 +36,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 8),
           _sectionHeader(i18n.t('appearance'), cs),
           _buildDynamicColorTile(state, i18n),
+          const SizedBox(height: 8),
+          _sectionHeader(i18n.t('packOptions'), cs),
+          _buildPackImagesTile(state, i18n),
+          _buildRemoveProcessedTile(state, i18n),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.code),
@@ -172,6 +176,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // will fall back gracefully on older Android.
     }
     return false;
+  }
+
+  Widget _buildPackImagesTile(AppState state, I18n i18n) {
+    return SwitchListTile(
+      title: Text(i18n.t('packImages')),
+      subtitle: Text(i18n.t('packImagesDesc')),
+      value: state.packImages,
+      onChanged: (v) => state.setPackImages(v),
+    );
+  }
+
+  Widget _buildRemoveProcessedTile(AppState state, I18n i18n) {
+    return SwitchListTile(
+      title: Text(i18n.t('removeProcessedFiles')),
+      subtitle: Text(i18n.t('removeProcessedFilesDesc')),
+      value: state.removeProcessedFiles,
+      onChanged: (v) => state.setRemoveProcessedFiles(v),
+    );
   }
 
   Future<void> _launchUrl(String url) async {

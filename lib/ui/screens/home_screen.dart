@@ -150,7 +150,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }));
     _flushLogs();
 
-    final converter = BrarchiveConverter(log: _log, i18n: i18n);
+    final converter = BrarchiveConverter(
+      log: _log,
+      i18n: i18n,
+      config: ConverterConfig(
+        packImages: state.packImages,
+        removeProcessedFiles: state.removeProcessedFiles,
+      ),
+    );
 
     try {
       final result = isPack
