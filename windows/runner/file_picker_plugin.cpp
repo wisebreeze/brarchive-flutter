@@ -170,15 +170,7 @@ class FilePickerPlugin : public flutter::Plugin {
 }  // namespace
 
 void RegisterFilePickerPlugin(flutter::FlutterEngine* engine) {
-  auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-      engine->messenger(), "com.wisebreeze.brarchive/file_picker",
-      &flutter::StandardMethodCodec::GetInstance());
-
-  auto plugin = std::make_unique<FilePickerPlugin>();
-  auto* plugin_pointer = plugin.get();
-  channel->SetMethodCallHandler(
-      [plugin_pointer](const auto& call, auto result) {
-        plugin_pointer->HandleMethodCall(call, std::move(result));
-      });
-  engine->AddPlugin(std::move(plugin));
+  FilePickerPlugin::RegisterWithRegistrar(
+      static_cast<flutter::PluginRegistrarWindows*>(
+          engine->GetRegistrarForPlugin("FilePickerPlugin")));
 }
