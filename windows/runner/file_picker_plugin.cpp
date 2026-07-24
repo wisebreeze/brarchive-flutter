@@ -1,7 +1,6 @@
 #include "file_picker_plugin.h"
 
 #include <flutter/method_channel.h>
-#include <flutter/plugin_registrar_windows.h>
 #include <flutter/standard_method_codec.h>
 #include <shobjidl.h>
 #include <windows.h>
@@ -109,25 +108,33 @@ std::wstring PickFolder() {
   return result;
 }
 
-class FilePickerPlugin : public flutter::Plugin {
+class FilePickerPlugin {
  public:
-  static void RegisterWithRegistrar(flutter::PluginRegistrarWindows* registrar) {
-    auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-        registrar->messenger(), "com.wisebreeze.brarchive/file_picker",
-        &flutter::StandardMethodCodec::GetInstance());
+  // Creates the method channel and registers the handler. The channel is
+  // kept alive for the lifetime of the engine via the captured shared_ptr.
+  static void Register(flutter::FlutterEngine* engine) {
+    auto plugin = std::make_shared<FilePickerPlugin>();
+    auto channel =
+        std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+            engine->messenger(), "com.wisebreeze.brarchive/file_picker",
+            &flutter::StandardMethodCodec::GetInstance());
 
-    auto plugin = std::make_unique<FilePickerPlugin>();
     channel->SetMethodCallHandler(
-        [plugin_pointer = plugin.get()](const auto& call, auto result) {
-          plugin_pointer->HandleMethodCall(call, std::move(result));
+        [plugin](const flutter::MethodCall<flutter::EncodableValue>& call,
+                 std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
+                     result) {
+          plugin->HandleMethodCall(call, std::move(result));
         });
-    registrar->AddPlugin(std::move(plugin));
+
+    // The channel is owned by the engine via the messenger; release the
+    // unique_ptr without deleting. This keeps the channel alive for the
+    // app lifetime, which is the desired behavior for a desktop app.
+    channel.release();
   }
 
   FilePickerPlugin() = default;
-  ~FilePickerPlugin() override = default;
+  ~FilePickerPlugin() = default;
 
- private:
   void HandleMethodCall(
       const flutter::MethodCall<flutter::EncodableValue>& call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
@@ -170,8 +177,5 @@ class FilePickerPlugin : public flutter::Plugin {
 }  // namespace
 
 void RegisterFilePickerPlugin(flutter::FlutterEngine* engine) {
-  auto* registrar = flutter::PluginRegistrarManager::GetInstance()
-                        ->GetRegistrar<flutter::PluginRegistrarWindows>(
-                            engine->GetRegistrarForPlugin("FilePickerPlugin"));
-  FilePickerPlugin::RegisterWithRegistrar(registrar);
+  FilePickerPlugin::Register(engine);
 }
