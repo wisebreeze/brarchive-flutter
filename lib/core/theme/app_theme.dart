@@ -62,10 +62,10 @@ class AppTheme {
     if (dynamicColor) {
       final systemColors = await DynamicColorPlugin.getCorePalette();
       if (systemColors != null) {
-        return _buildTheme(systemColors.toColorScheme(brightness: Brightness.light));
+        return buildTheme(systemColors.toColorScheme(brightness: Brightness.light));
       }
     }
-    return _buildTheme(ColorScheme.fromSeed(
+    return buildTheme(ColorScheme.fromSeed(
       seedColor: _seedColor,
       brightness: Brightness.light,
     ));
@@ -75,10 +75,10 @@ class AppTheme {
     if (dynamicColor) {
       final systemColors = await DynamicColorPlugin.getCorePalette();
       if (systemColors != null) {
-        return _buildTheme(systemColors.toColorScheme(brightness: Brightness.dark));
+        return buildTheme(systemColors.toColorScheme(brightness: Brightness.dark));
       }
     }
-    return _buildTheme(ColorScheme.fromSeed(
+    return buildTheme(ColorScheme.fromSeed(
       seedColor: _seedColor,
       brightness: Brightness.dark,
     ));
