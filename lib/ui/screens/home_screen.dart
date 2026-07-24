@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -8,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../app_state.dart';
 import '../../core/brarchive/brarchive_converter.dart';
+import '../../core/file_picker/native_file_picker.dart';
 import '../../core/i18n/i18n.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -71,18 +71,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _pickInputFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['zip', 'mcpack'],
-    );
-    if (result != null && result.files.single.path != null) {
-      _inputController.text = result.files.single.path!;
+    final result = await NativeFilePicker.pickFile(extensions: ['zip', 'mcpack']);
+    if (result != null && result.isNotEmpty) {
+      final path = await NativeFilePicker.resolveToFilePath(result);
+      _inputController.text = path;
     }
   }
 
   Future<void> _pickOutputDir() async {
-    final result = await FilePicker.platform.getDirectoryPath();
-    if (result != null) {
+    final result = await NativeFilePicker.pickDirectory();
+    if (result != null && result.isNotEmpty) {
       _outputController.text = result;
     }
   }
