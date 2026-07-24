@@ -213,9 +213,16 @@ Future<_IsolateResult> _packIsolateImpl(_PackParams params) async {
   for (final file in archive) {
     if (file.isFile) {
       final name = file.name.replaceAll('\\', '/');
-      // readBytes() returns the full file content as a List<int>,
-      // reliably handling both stored and compressed entries.
-      files[name] = Uint8List.fromList(file.readBytes());
+      // file.content returns the decompressed data. It may be a List<int>
+      // or an InputStream depending on the archive package version.
+      // Always copy into a new Uint8List to avoid views into internal
+      // buffers that get reused.
+      final raw = file.content;
+      if (raw is List<int>) {
+        files[name] = Uint8List.fromList(raw);
+      } else if (raw is Uint8List) {
+        files[name] = Uint8List.fromList(raw);
+      }
     }
   }
 
@@ -316,7 +323,12 @@ Future<_IsolateResult> _unpackIsolateImpl(_UnpackParams params) async {
   for (final file in archive) {
     if (file.isFile) {
       final name = file.name.replaceAll('\\', '/');
-      files[name] = Uint8List.fromList(file.readBytes());
+      final raw = file.content;
+      if (raw is List<int>) {
+        files[name] = Uint8List.fromList(raw);
+      } else if (raw is Uint8List) {
+        files[name] = Uint8List.fromList(raw);
+      }
     }
   }
 

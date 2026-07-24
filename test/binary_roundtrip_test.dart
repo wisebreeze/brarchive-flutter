@@ -28,7 +28,7 @@ void main() {
       final decodedArchive = ZipDecoder().decodeBytes(zipBytes);
       final decodedFile = decodedArchive.files.first;
       expect(decodedFile.isFile, true);
-      final decodedContent = decodedFile.readBytes();
+      final decodedContent = decodedFile.content as List<int>;
       expect(decodedContent.length, binaryContent.length);
       for (var i = 0; i < binaryContent.length; i++) {
         expect(decodedContent[i], binaryContent[i],
@@ -65,7 +65,7 @@ void main() {
       for (final file in decoded) {
         if (!file.isFile) continue;
         final original = files[file.name]!;
-        final content = file.readBytes();
+        final content = file.content as List<int>;
         expect(content.length, original.length,
             reason: '${file.name} zip round-trip length mismatch');
         for (var i = 0; i < original.length; i++) {
