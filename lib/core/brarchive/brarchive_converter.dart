@@ -213,7 +213,9 @@ Future<_IsolateResult> _packIsolateImpl(_PackParams params) async {
   for (final file in archive) {
     if (file.isFile) {
       final name = file.name.replaceAll('\\', '/');
-      files[name] = Uint8List.fromList(file.content as List<int>);
+      // readBytes() returns the full file content as a List<int>,
+      // reliably handling both stored and compressed entries.
+      files[name] = Uint8List.fromList(file.readBytes());
     }
   }
 
@@ -314,7 +316,7 @@ Future<_IsolateResult> _unpackIsolateImpl(_UnpackParams params) async {
   for (final file in archive) {
     if (file.isFile) {
       final name = file.name.replaceAll('\\', '/');
-      files[name] = Uint8List.fromList(file.content as List<int>);
+      files[name] = Uint8List.fromList(file.readBytes());
     }
   }
 
