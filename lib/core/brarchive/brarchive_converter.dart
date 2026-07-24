@@ -292,8 +292,8 @@ Future<_IsolateResult> _packIsolateImpl(_PackParams params) async {
   final outArchive = Archive();
   final sortedKeys = newFiles.keys.toList()..sort();
   for (final name in sortedKeys) {
-    final data = Uint8List.fromList(newFiles[name]!);
-    outArchive.addFile(ArchiveFile.bytes(name, data));
+    final data = newFiles[name]!;
+    outArchive.addFile(ArchiveFile(name, data.length, data));
   }
   final outPath = _uniqueOutputPath(params.inputPath, params.outputDir, suffix: '_packed');
   await File(outPath).writeAsBytes(Uint8List.fromList(ZipEncoder().encode(outArchive)!));
@@ -398,8 +398,8 @@ Future<_IsolateResult> _unpackIsolateImpl(_UnpackParams params) async {
   final outArchive = Archive();
   final sortedKeys = newFiles.keys.toList()..sort();
   for (final name in sortedKeys) {
-    final data = Uint8List.fromList(newFiles[name]!);
-    outArchive.addFile(ArchiveFile.bytes(name, data));
+    final data = newFiles[name]!;
+    outArchive.addFile(ArchiveFile(name, data.length, data));
   }
   final outPath = _uniqueOutputPath(params.inputPath, params.outputDir, suffix: '_unpacked');
   await File(outPath).writeAsBytes(Uint8List.fromList(ZipEncoder().encode(outArchive)!));
