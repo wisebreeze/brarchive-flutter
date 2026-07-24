@@ -32,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _outputController = TextEditingController();
   final _consoleController = TextEditingController();
   final _scrollController = ScrollController();
+  final _logBuffer = StringBuffer();
 
   bool _busy = false;
 
@@ -50,18 +51,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _log(String line) {
     final ts = DateTime.now().toIso8601String().substring(11, 19);
-    final formatted = '[$ts] $line\n';
-    _consoleController.text = _consoleController.text + formatted;
+    _logBuffer.writeln('[$ts] $line');
+  }
+
+  /// Flushes buffered logs to the console widget in a single update.
+  /// Called after batch operations complete to avoid O(n²) string
+  /// concatenation when hundreds of log lines are produced.
+  void _flushLogs() {
+    if (_logBuffer.isEmpty) return;
+    final newText = _logBuffer.toString();
+    _logBuffer.clear();
+    // Append to existing text in one operation
+    _consoleController.text = _consoleController.text + newText;
     _scrollToBottom();
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
+        _scrollController.jumpTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
         );
       }
     });
@@ -139,6 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'action': i18n.t(isPack ? 'actionPack' : 'actionUnpack'),
       'file': p.basename(inputPath),
     }));
+    _flushLogs();
 
     final converter = BrarchiveConverter(log: _log, i18n: i18n);
 
@@ -147,17 +157,22 @@ class _HomeScreenState extends State<HomeScreen> {
           ? await converter.pack(inputPath: inputPath, outputDir: outputDir)
           : await converter.unpack(inputPath: inputPath, outputDir: outputDir);
 
+      // Flush all logs collected from the background isolate in one batch
+      _flushLogs();
+
       if (result.success) {
         _log(i18n.t('logOutputAt', {'path': result.outputPath!}));
         _log(i18n.t('logDone', {
           'duration': '${result.duration.inMilliseconds}ms',
         }));
+        _flushLogs();
         _showSnack(i18n.t('statusDone'), isError: false);
       } else {
         _showSnack(i18n.t('statusError'), isError: true);
       }
     } catch (e) {
       _log(i18n.t('logError', {'error': e.toString()}));
+      _flushLogs();
       _showSnack(i18n.t('statusError'), isError: true);
     } finally {
       if (mounted) setState(() => _busy = false);
