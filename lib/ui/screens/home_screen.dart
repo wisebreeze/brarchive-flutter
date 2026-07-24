@@ -1,0 +1,433 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+
+import '../../app_state.dart';
+import '../../core/brarchive/brarchive_converter.dart';
+import '../../core/i18n/i18n.dart';
+import '../../core/theme/app_theme.dart';
+
+/// Main screen of the brarchive converter app.
+///
+/// Layout:
+///   - AppBar with overflow "more" menu (language + theme)
+///   - Input file picker row
+///   - Output directory picker row (defaults to Downloads)
+///   - Pack / Unpack action buttons
+///   - Console output panel
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final _inputController = TextEditingController();
+  final _outputController = TextEditingController();
+  final _consoleController = TextEditingController();
+  final _scrollController = ScrollController();
+
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initDefaultOutput();
+  }
+
+  Future<void> _initDefaultOutput() async {
+    Directory? dir;
+    try {
+      dir = await getDownloadsDirectory();
+    } catch (_) {}
+    dir ??= await getApplicationDocumentsDirectory();
+    if (mounted) {
+      _outputController.text = dir.path;
+    }
+  }
+
+  void _log(String line) {
+    final ts = DateTime.now().toIso8601String().substring(11, 19);
+    final formatted = '[$ts] $line\n';
+    _consoleController.text = _consoleController.text + formatted;
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _pickInputFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['zip', 'mcpack'],
+    );
+    if (result != null && result.files.single.path != null) {
+      _inputController.text = result.files.single.path!;
+    }
+  }
+
+  Future<void> _pickOutputDir() async {
+    final result = await FilePicker.platform.getDirectoryPath();
+    if (result != null) {
+      _outputController.text = result;
+    }
+  }
+
+  Future<void> _runConversion(bool isPack) async {
+    if (_busy) return;
+    final state = context.read<AppState>();
+    final i18n = state.i18n;
+
+    final inputPath = _inputController.text.trim();
+    final outputDir = _outputController.text.trim();
+
+    if (inputPath.isEmpty) {
+      _showError(i18n.t('errNoInput'));
+      return;
+    }
+    if (outputDir.isEmpty) {
+      _showError(i18n.t('errNoOutput'));
+      return;
+    }
+    final ext = p.extension(inputPath).toLowerCase();
+    if (ext != '.zip' && ext != '.mcpack') {
+      _showError(i18n.t('errInvalidInput'));
+      return;
+    }
+    if (!File(inputPath).existsSync()) {
+      _showError(i18n.t('errInputNotExist'));
+      return;
+    }
+    if (!Directory(outputDir).existsSync()) {
+      _showError(i18n.t('errOutputNotExist'));
+      return;
+    }
+
+    setState(() => _busy = true);
+    _log(i18n.t('logStarted', {
+      'action': i18n.t(isPack ? 'actionPack' : 'actionUnpack'),
+      'file': p.basename(inputPath),
+    }));
+
+    final converter = BrarchiveConverter(log: _log, i18n: i18n);
+
+    try {
+      final result = isPack
+          ? await converter.pack(inputPath: inputPath, outputDir: outputDir)
+          : await converter.unpack(inputPath: inputPath, outputDir: outputDir);
+
+      if (result.success) {
+        _log(i18n.t('logOutputAt', {'path': result.outputPath!}));
+        _log(i18n.t('logDone', {
+          'duration': '${result.duration.inMilliseconds}ms',
+        }));
+        _showSnack(i18n.t('statusDone'), isError: false);
+      } else {
+        _showSnack(i18n.t('statusError'), isError: true);
+      }
+    } catch (e) {
+      _log(i18n.t('logError', {'error': e.toString()}));
+      _showSnack(i18n.t('statusError'), isError: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _showError(String message) {
+    _showSnack(message, isError: true);
+  }
+
+  void _showSnack(String message, {required bool isError}) {
+    if (!mounted) return;
+    final cs = Theme.of(context).colorScheme;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? cs.errorContainer : cs.primaryContainer,
+        foregroundColor: isError ? cs.onErrorContainer : cs.onPrimaryContainer,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _inputController.dispose();
+    _outputController.dispose();
+    _consoleController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final i18n = state.i18n;
+    final cs = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(i18n.t('appTitle')),
+        actions: [_buildMoreMenu(state, i18n)],
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildInputRow(i18n, cs),
+              const SizedBox(height: 12),
+              _buildOutputRow(i18n, cs),
+              const SizedBox(height: 20),
+              _buildActionButtons(i18n, cs),
+              const SizedBox(height: 20),
+              Expanded(child: _buildConsole(i18n, cs)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputRow(I18n i18n, ColorScheme cs) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          i18n.t('inputLabel'),
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _inputController,
+                decoration: InputDecoration(
+                  hintText: i18n.t('inputHint'),
+                  prefixIcon: const Icon(Icons.input_outlined),
+                  isDense: true,
+                ),
+                readOnly: true,
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton.tonalIcon(
+              onPressed: _pickInputFile,
+              icon: const Icon(Icons.folder_open_outlined),
+              label: Text(i18n.t('browse')),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOutputRow(I18n i18n, ColorScheme cs) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          i18n.t('outputLabel'),
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _outputController,
+                decoration: InputDecoration(
+                  hintText: i18n.t('outputHint'),
+                  prefixIcon: const Icon(Icons.output_outlined),
+                  isDense: true,
+                ),
+                readOnly: true,
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton.tonalIcon(
+              onPressed: _pickOutputDir,
+              icon: const Icon(Icons.drive_folder_upload_outlined),
+              label: Text(i18n.t('browse')),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(I18n i18n, ColorScheme cs) {
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: _busy ? null : () => _runConversion(true),
+            icon: _busy
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.archive_outlined),
+            label: Text(i18n.t('pack')),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: _busy ? null : () => _runConversion(false),
+            style: FilledButton.styleFrom(
+              backgroundColor: cs.secondaryContainer,
+              foregroundColor: cs.onSecondaryContainer,
+            ),
+            icon: _busy
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.unarchive_outlined),
+            label: Text(i18n.t('unpack')),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConsole(I18n i18n, ColorScheme cs) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.terminal_outlined, size: 18, color: cs.primary),
+            const SizedBox(width: 6),
+            Text(
+              i18n.t('console'),
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const Spacer(),
+            if (_consoleController.text.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 20),
+                tooltip: 'Clear',
+                onPressed: _busy
+                    ? null
+                    : () => setState(() => _consoleController.clear()),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: cs.outlineVariant),
+            ),
+            child: _consoleController.text.isEmpty
+                ? Center(
+                    child: Text(
+                      i18n.t('consoleEmpty'),
+                      style: TextStyle(color: cs.onSurfaceVariant),
+                    ),
+                  )
+                : SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(12),
+                    child: SelectableText(
+                      _consoleController.text,
+                      style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                        height: 1.4,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMoreMenu(AppState state, I18n i18n) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert),
+      tooltip: i18n.t('more'),
+      onSelected: (value) async {
+        if (value.startsWith('lang:')) {
+          final code = value.substring(5);
+          await state.setLanguage(AppLanguageX.fromCode(code));
+        } else if (value.startsWith('theme:')) {
+          final code = value.substring(6);
+          await state.setThemeMode(AppThemeModeX.fromCode(code));
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          enabled: false,
+          child: Text(
+            i18n.t('language'),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+          ),
+        ),
+        _radioItem('lang:system', i18n.t('followSystem'),
+            state.i18n.language == AppLanguage.followSystem),
+        _radioItem('lang:en', i18n.t('english'),
+            state.i18n.language == AppLanguage.english),
+        _radioItem('lang:zh', i18n.t('chinese'),
+            state.i18n.language == AppLanguage.chinese),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          enabled: false,
+          child: Text(
+            i18n.t('theme'),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+          ),
+        ),
+        _radioItem('theme:system', i18n.t('themeFollowSystem'),
+            state.themeMode == AppThemeMode.followSystem),
+        _radioItem('theme:light', i18n.t('themeLight'),
+            state.themeMode == AppThemeMode.light),
+        _radioItem('theme:dark', i18n.t('themeDark'),
+            state.themeMode == AppThemeMode.dark),
+      ],
+    );
+  }
+
+  PopupMenuItem<String> _radioItem(String value, String label, bool selected) {
+    return PopupMenuItem<String>(
+      value: value,
+      child: Row(
+        children: [
+          Icon(
+            selected ? Icons.radio_button_checked : Icons.radio_button_off,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Text(label),
+        ],
+      ),
+    );
+  }
+}
