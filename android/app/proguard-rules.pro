@@ -21,5 +21,9 @@
 # Keep path_provider
 -keep class io.flutter.plugins.pathprovider.** { *; }
 
+# Suppress R8 missing class errors for Google Play Core (not used by this app)
+-dontwarn com.google.android.play.core.**
+-dontwarn io.flutter.embedding.engine.deferredcomponents.**
+
 # Standard Flutter ProGuard rules
 -dontwarn android.**
