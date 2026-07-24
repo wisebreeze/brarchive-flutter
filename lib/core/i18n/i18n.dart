@@ -169,7 +169,9 @@ const Map<String, String> _fallbackEn = {
   'close': 'Close',
   'packOptions': 'Pack options',
   'packImages': 'Pack images',
-  'packImagesDesc': 'Include .png/.jpg/.jpeg/.tga files in brarchive (default: off)',
+  'packImagesDesc': 'Include .png/.jpg/.jpeg/.tga files in brarchive',
   'removeProcessedFiles': 'Delete original files',
-  'removeProcessedFilesDesc': 'Remove source files after packing into brarchive (default: on)',
+  'removeProcessedFilesDesc': 'Remove source files after packing into brarchive',
+  'skipEmptyEntries': 'Skip empty entries',
+  'skipEmptyEntriesDesc': "Don't restore 0-byte entries from brarchive over existing files",
 };

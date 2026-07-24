@@ -17,6 +17,7 @@ class AppState extends ChangeNotifier {
   bool _useDynamicColor = true;
   bool _packImages = false;
   bool _removeProcessedFiles = true;
+  bool _skipEmptyEntries = true;
   bool _initialized = false;
 
   I18n get i18n => _i18n;
@@ -24,6 +25,7 @@ class AppState extends ChangeNotifier {
   bool get useDynamicColor => _useDynamicColor;
   bool get packImages => _packImages;
   bool get removeProcessedFiles => _removeProcessedFiles;
+  bool get skipEmptyEntries => _skipEmptyEntries;
   bool get initialized => _initialized;
 
   Future<void> init(Locale systemLocale) async {
@@ -33,17 +35,20 @@ class AppState extends ChangeNotifier {
       final dynamicColor = await _settings.getDynamicColor();
       final packImages = await _settings.getPackImages();
       final removeProcessed = await _settings.getRemoveProcessedFiles();
+      final skipEmpty = await _settings.getSkipEmptyEntries();
       _i18n = await I18n.load(language, systemLocale);
       _themeMode = themeMode;
       _useDynamicColor = dynamicColor;
       _packImages = packImages;
       _removeProcessedFiles = removeProcessed;
+      _skipEmptyEntries = skipEmpty;
     } catch (e) {
       _i18n = await I18n.load(AppLanguage.followSystem, systemLocale);
       _themeMode = AppThemeMode.followSystem;
       _useDynamicColor = true;
       _packImages = false;
       _removeProcessedFiles = true;
+      _skipEmptyEntries = true;
     }
     _initialized = true;
     notifyListeners();
@@ -82,6 +87,12 @@ class AppState extends ChangeNotifier {
   Future<void> setRemoveProcessedFiles(bool enabled) async {
     await _settings.setRemoveProcessedFiles(enabled);
     _removeProcessedFiles = enabled;
+    notifyListeners();
+  }
+
+  Future<void> setSkipEmptyEntries(bool enabled) async {
+    await _settings.setSkipEmptyEntries(enabled);
+    _skipEmptyEntries = enabled;
     notifyListeners();
   }
 

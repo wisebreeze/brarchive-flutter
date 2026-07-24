@@ -156,6 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
       config: ConverterConfig(
         packImages: state.packImages,
         removeProcessedFiles: state.removeProcessedFiles,
+        skipEmptyEntries: state.skipEmptyEntries,
       ),
     );
 

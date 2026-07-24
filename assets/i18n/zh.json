@@ -67,7 +67,9 @@
   "close": "关闭",
   "packOptions": "打包选项",
   "packImages": "打包图片",
-  "packImagesDesc": "将 .png/.jpg/.jpeg/.tga 文件也打包到 brarchive（默认：关闭）",
+  "packImagesDesc": "将 .png/.jpg/.jpeg/.tga 文件也打包到 brarchive",
   "removeProcessedFiles": "删除原始文件",
-  "removeProcessedFilesDesc": "打包到 brarchive 后删除源文件（默认：开启）"
+  "removeProcessedFilesDesc": "打包到 brarchive 后删除源文件",
+  "skipEmptyEntries": "跳过空条目",
+  "skipEmptyEntriesDesc": "解包时不将 0 字节的条目覆盖已有文件"
 }

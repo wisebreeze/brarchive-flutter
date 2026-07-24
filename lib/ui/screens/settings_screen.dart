@@ -40,6 +40,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _sectionHeader(i18n.t('packOptions'), cs),
           _buildPackImagesTile(state, i18n),
           _buildRemoveProcessedTile(state, i18n),
+          _buildSkipEmptyEntriesTile(state, i18n),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.code),
@@ -193,6 +194,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       subtitle: Text(i18n.t('removeProcessedFilesDesc')),
       value: state.removeProcessedFiles,
       onChanged: (v) => state.setRemoveProcessedFiles(v),
+    );
+  }
+
+  Widget _buildSkipEmptyEntriesTile(AppState state, I18n i18n) {
+    return SwitchListTile(
+      title: Text(i18n.t('skipEmptyEntries')),
+      subtitle: Text(i18n.t('skipEmptyEntriesDesc')),
+      value: state.skipEmptyEntries,
+      onChanged: (v) => state.setSkipEmptyEntries(v),
     );
   }
 

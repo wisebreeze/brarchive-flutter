@@ -10,6 +10,7 @@ class SettingsService {
   static const _dynamicColorKey = 'app_dynamic_color';
   static const _packImagesKey = 'pack_images';
   static const _removeProcessedFilesKey = 'remove_processed_files';
+  static const _skipEmptyEntriesKey = 'skip_empty_entries';
 
   Future<AppLanguage> getLanguage() async {
     final prefs = await SharedPreferences.getInstance();
@@ -59,5 +60,15 @@ class SettingsService {
   Future<void> setRemoveProcessedFiles(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_removeProcessedFilesKey, enabled);
+  }
+
+  Future<bool> getSkipEmptyEntries() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_skipEmptyEntriesKey) ?? true;
+  }
+
+  Future<void> setSkipEmptyEntries(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_skipEmptyEntriesKey, enabled);
   }
 }

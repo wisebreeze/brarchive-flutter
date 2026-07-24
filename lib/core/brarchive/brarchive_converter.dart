@@ -15,12 +15,14 @@ class ConverterConfig {
   final String outputDir;
 
   /// Whether to also pack image files (.png, .jpg, .jpeg, .tga) into brarchive.
-  /// Default: false (images stay as loose files).
   final bool packImages;
 
   /// Whether to delete original files after packing them into brarchive.
-  /// Default: true (mirrors brarchive-go's remove_processed_files).
   final bool removeProcessedFiles;
+
+  /// Whether to skip restoring empty (0-byte) entries from brarchive during
+  /// unpack, so they don't overwrite existing non-empty files.
+  final bool skipEmptyEntries;
 
   const ConverterConfig({
     this.includeExts = const ['.json', '.json5', '.ui'],
@@ -30,6 +32,7 @@ class ConverterConfig {
     this.outputDir = '__brarchive',
     this.packImages = false,
     this.removeProcessedFiles = true,
+    this.skipEmptyEntries = true,
   });
 
   bool isTargetExtension(String ext) {
@@ -42,8 +45,17 @@ class ConverterConfig {
     return false;
   }
 
+  /// Returns the effective list of excluded folder names.
+  /// When packImages is enabled, 'textures' is removed from the exclusion
+  /// list so image files inside it can be packed.
+  List<String> get effectiveExcludeDirs {
+    if (!packImages) return excludeDirs;
+    return excludeDirs.where((d) => d.toLowerCase() != 'textures').toList();
+  }
+
   bool isExcludedFolder(String name) {
-    return excludeDirs.any((d) => d.toLowerCase() == name.toLowerCase());
+    final dirs = effectiveExcludeDirs;
+    return dirs.any((d) => d.toLowerCase() == name.toLowerCase());
   }
 
   bool isSpecialFolder(String name) {
@@ -417,6 +429,14 @@ Future<_IsolateResult> _unpackIsolateImpl(_UnpackParams params) async {
 
     for (final r in restored.entries) {
       final restorePath = targetDir.isEmpty ? r.key : '$targetDir/${r.key}';
+
+      // Skip empty (0-byte) entries if configured, so they don't overwrite
+      // existing non-empty files (e.g. manifest stubs in brarchive).
+      if (config.skipEmptyEntries && r.value.isEmpty) {
+        logs.add('Skipping empty entry: $restorePath');
+        continue;
+      }
+
       logs.add('Writing $restorePath (${r.value.length} bytes)');
       newFiles[restorePath] = Uint8List.fromList(r.value);
     }
