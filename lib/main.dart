@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'app_state.dart';
@@ -69,6 +70,11 @@ class _BrarchiveAppState extends State<BrarchiveApp> with WidgetsBindingObserver
             title: _appState.i18n.t('appTitle'),
             locale: _appState.i18n.effectiveLocale,
             supportedLocales: I18n.supportedLocales,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
             theme: AppTheme.light(),
             darkTheme: AppTheme.dark(),
             themeMode: _appState.themeMode.toThemeMode(),
