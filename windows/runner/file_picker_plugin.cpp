@@ -170,7 +170,8 @@ class FilePickerPlugin : public flutter::Plugin {
 }  // namespace
 
 void RegisterFilePickerPlugin(flutter::FlutterEngine* engine) {
-  FilePickerPlugin::RegisterWithRegistrar(
-      static_cast<flutter::PluginRegistrarWindows*>(
-          engine->GetRegistrarForPlugin("FilePickerPlugin")));
+  auto* registrar = flutter::PluginRegistrarManager::GetInstance()
+                        ->GetRegistrar<flutter::PluginRegistrarWindows>(
+                            engine->GetRegistrarForPlugin("FilePickerPlugin"));
+  FilePickerPlugin::RegisterWithRegistrar(registrar);
 }
