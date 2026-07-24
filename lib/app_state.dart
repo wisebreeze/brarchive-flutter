@@ -21,10 +21,16 @@ class AppState extends ChangeNotifier {
   bool get initialized => _initialized;
 
   Future<void> init(Locale systemLocale) async {
-    final language = await _settings.getLanguage();
-    final themeMode = await _settings.getThemeMode();
-    _i18n = await I18n.load(language, systemLocale);
-    _themeMode = themeMode;
+    try {
+      final language = await _settings.getLanguage();
+      final themeMode = await _settings.getThemeMode();
+      _i18n = await I18n.load(language, systemLocale);
+      _themeMode = themeMode;
+    } catch (e) {
+      // Fallback to defaults if settings/i18n loading fails
+      _i18n = await I18n.load(AppLanguage.followSystem, systemLocale);
+      _themeMode = AppThemeMode.followSystem;
+    }
     _initialized = true;
     notifyListeners();
   }

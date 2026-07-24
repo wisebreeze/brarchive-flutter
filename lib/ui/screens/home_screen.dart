@@ -186,19 +186,30 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [_buildMoreMenu(state, i18n)],
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildInputRow(i18n, cs),
-              const SizedBox(height: 12),
-              _buildOutputRow(i18n, cs),
-              const SizedBox(height: 20),
-              _buildActionButtons(i18n, cs),
-              const SizedBox(height: 20),
-              Expanded(child: _buildConsole(i18n, cs)),
-            ],
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height -
+                  AppBar().preferredSize.height -
+                  MediaQuery.of(context).padding.top -
+                  MediaQuery.of(context).padding.bottom - 32,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildInputRow(i18n, cs),
+                const SizedBox(height: 12),
+                _buildOutputRow(i18n, cs),
+                const SizedBox(height: 20),
+                _buildActionButtons(i18n, cs),
+                const SizedBox(height: 20),
+                SizedBox(
+                  height: 300,
+                  child: _buildConsole(i18n, cs),
+                ),
+              ],
+            ),
           ),
         ),
       ),
