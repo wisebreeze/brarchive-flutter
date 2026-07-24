@@ -60,8 +60,17 @@ class I18n {
     final bundles = <String, Map<String, String>>{};
     for (final locale in _supportedLocales) {
       final code = locale.languageCode;
-      final json = await rootBundle.loadString('assets/i18n/$code.json');
-      bundles[code] = Map<String, String>.from(jsonDecode(json));
+      try {
+        final json = await rootBundle.loadString('assets/i18n/$code.json');
+        bundles[code] = Map<String, String>.from(jsonDecode(json));
+      } catch (e) {
+        // Fallback: empty bundle, t() will return the key
+        bundles[code] = {};
+      }
+    }
+    // Ensure 'en' always has content as the ultimate fallback
+    if (bundles['en']?.isEmpty ?? true) {
+      bundles['en'] = _fallbackEn;
     }
     return I18n._(bundles, language, systemLocale);
   }
@@ -88,3 +97,60 @@ class I18n {
     return value;
   }
 }
+
+/// Hardcoded English fallback used when the JSON asset cannot be loaded
+/// (e.g. asset bundle issues in certain release builds).
+const Map<String, String> _fallbackEn = {
+  'appTitle': 'BR Archive',
+  'inputLabel': 'Input file',
+  'inputHint': 'Select a .zip or .mcpack file',
+  'outputLabel': 'Output directory',
+  'outputHint': 'Defaults to Downloads folder',
+  'browse': 'Browse',
+  'pack': 'Pack',
+  'unpack': 'Unpack',
+  'console': 'Console',
+  'consoleEmpty': 'No output yet. Operations will be logged here.',
+  'more': 'More',
+  'language': 'Language',
+  'followSystem': 'Follow system',
+  'english': 'English',
+  'chinese': '简体中文',
+  'theme': 'Theme',
+  'themeFollowSystem': 'Follow system',
+  'themeLight': 'Light',
+  'themeDark': 'Dark',
+  'selectFile': 'Select file',
+  'selectDirectory': 'Select directory',
+  'statusReady': 'Ready',
+  'statusProcessing': 'Processing...',
+  'statusDone': 'Done',
+  'statusError': 'Error',
+  'errNoInput': 'Please select an input file',
+  'errNoOutput': 'Please select an output directory',
+  'errInvalidInput': 'Input must be a .zip or .mcpack file',
+  'errInputNotExist': 'Input file does not exist',
+  'errOutputNotExist': 'Output directory does not exist',
+  'logStarted': 'Started: {action} on {file}',
+  'logExtracting': 'Extracting archive...',
+  'logNoBrarchiveFound': 'No __brarchive folders found, copying as-is',
+  'logFoundBrarchive': 'Found {count} __brarchive folder(s)',
+  'logDeserializing': 'Deserializing {file}...',
+  'logSerializing': 'Serializing {count} file(s) into {output}',
+  'logWritingFile': 'Writing {file} ({size} bytes)',
+  'logZipping': 'Creating output archive...',
+  'logDone': 'Done in {duration}',
+  'logError': 'Error: {error}',
+  'logOutputAt': 'Output saved to: {path}',
+  'logScanning': 'Scanning for target files (.json, .json5, .ui)...',
+  'logFoundTargets': 'Found {count} target file(s) in {dir}',
+  'logCreatingBrarchive': 'Creating __brarchive folder',
+  'logRemovingOriginal': 'Removing original target files',
+  'logCleaningEmptyDirs': 'Cleaning empty directories',
+  'logFoundBrarchiveFiles': 'Found {count} .brarchive file(s)',
+  'logRestoringFiles': 'Restoring files from {file}',
+  'logRestoredFiles': 'Restored {count} file(s)',
+  'logRemovingBrarchive': 'Removing __brarchive folder',
+  'actionPack': 'Pack',
+  'actionUnpack': 'Unpack',
+};
