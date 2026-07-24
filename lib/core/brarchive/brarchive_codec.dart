@@ -151,7 +151,12 @@ class BrarchiveCodec {
           'need bytes [$start, $end) but data length is ${data.length}',
         );
       }
-      result[desc.name] = Uint8List.sublistView(data, start, end);
+      // Create an independent copy, not a view. Views break when the
+      // underlying buffer crosses isolate boundaries (compute()) or is
+      // reused by ArchiveFile, causing 0-byte output for binary entries.
+      result[desc.name] = Uint8List.fromList(
+        data.sublist(start, end),
+      );
     }
 
     return result;
