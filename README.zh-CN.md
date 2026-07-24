@@ -146,4 +146,4 @@ flutter run
 
 ## 许可证
 
-本项目基于 MPL-2.0 许可证，详见 [LICENSE](LICENSE) 文件。
+本项目基于 GNU General Public License v3.0 许可证，详见 [LICENSE](LICENSE) 文件。
