@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart' as pp;
 
 /// Native file picker using platform method channels.
 ///
 /// - Android: uses Intent.ACTION_OPEN_DOCUMENT (Storage Access Framework)
-/// - Windows: uses Win32 GetOpenFileNameW / SHBrowseForFolder via method channel
+/// - Windows: uses Win32 GetOpenFileNameW / IFileDialog via method channel
 ///
 /// This avoids the file_picker package dependency which pulls in
 /// flutter_plugin_android_lifecycle and causes compileSdk conflicts.
@@ -12,10 +13,6 @@ class NativeFilePicker {
   static const _channel = MethodChannel('com.wisebreeze.brarchive/file_picker');
 
   /// Picks a single file. Returns the absolute path or null if cancelled.
-  ///
-  /// [extensions] is a list of extensions without dot, e.g. ['zip', 'mcpack'].
-  /// On Android the path is a content URI; the native side copies it to the
-  /// app cache and returns a real file path.
   static Future<String?> pickFile({List<String>? extensions}) async {
     try {
       final result = await _channel.invokeMethod<String>('pickFile', {
@@ -51,5 +48,26 @@ class NativeFilePicker {
       }
     }
     return uriOrPath;
+  }
+
+  /// Returns the system Downloads directory path.
+  /// On Android, uses Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS).
+  /// On Windows/Linux/macOS, uses path_provider's getDownloadsDirectory.
+  static Future<String> getDownloadsDirectory() async {
+    if (Platform.isAndroid) {
+      try {
+        final result = await _channel.invokeMethod<String>('getDownloadsDirectory');
+        if (result != null && result.isNotEmpty) return result;
+      } on PlatformException {
+        // fall through
+      }
+    }
+    // Desktop fallback via path_provider
+    try {
+      final dir = await pp.getDownloadsDirectory();
+      if (dir != null) return dir.path;
+    } catch (_) {}
+    // Ultimate fallback
+    return (await pp.getApplicationDocumentsDirectory()).path;
   }
 }

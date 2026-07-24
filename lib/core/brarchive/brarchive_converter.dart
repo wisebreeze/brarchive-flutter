@@ -8,19 +8,10 @@ import 'brarchive_codec.dart';
 
 /// Configuration for the brarchive converter, mirroring brarchive-go's config.toml.
 class ConverterConfig {
-  /// File extensions that should be packed into brarchive.
   final List<String> includeExts;
-
-  /// Directory names to exclude when scanning for target files.
   final List<String> excludeDirs;
-
-  /// Special folders whose subdirectories are processed recursively.
   final List<String> specialFolders;
-
-  /// Files to exclude by relative path or name.
   final List<String> excludeFiles;
-
-  /// Output folder name inside the archive (the __brarchive folder).
   final String outputDir;
 
   const ConverterConfig({
@@ -71,10 +62,20 @@ class ConvertResult {
 
 /// Converts between zip/mcpack archives and the brarchive format.
 ///
-/// Pack:   zip/mcpack -> extract -> find target files (.json/.json5/.ui)
-///         -> serialize into __brarchive/*.brarchive -> re-zip
-/// Unpack: zip/mcpack -> extract -> find __brarchive/*.brarchive
-///         -> deserialize -> restore original files -> re-zip
+/// The logic mirrors brarchive-go:
+///
+/// **Pack**: extract archive → walk directories → for each directory
+/// containing target files (.json/.json5/.ui), serialize them into a
+/// `.brarchive` file placed inside `__brarchive/` at the archive root
+/// (or at the subpack root for directories inside `subpacks/`). The
+/// brarchive file name equals the source directory name, and the path
+/// inside `__brarchive/` mirrors the source directory's parent path.
+/// Original target files are removed, then the tree is re-zipped.
+///
+/// **Unpack**: extract archive → find all `__brarchive/` folders →
+/// for each `.brarchive` file, deserialize and restore files to the
+/// directory implied by the path relative to `__brarchive/`. Remove
+/// `__brarchive/` folders, then re-zip.
 class BrarchiveConverter {
   BrarchiveConverter({
     this.config = const ConverterConfig(),
@@ -86,7 +87,10 @@ class BrarchiveConverter {
   final void Function(String) log;
   final I18n i18n;
 
-  /// Pack: convert target files inside the archive into brarchive format.
+  // ------------------------------------------------------------------
+  // Pack
+  // ------------------------------------------------------------------
+
   Future<ConvertResult> pack({
     required String inputPath,
     required String outputDir,
@@ -97,21 +101,24 @@ class BrarchiveConverter {
       final archive = await _readArchive(inputPath);
       final files = _archiveToMap(archive);
 
-      // Scan for target files
       log(i18n.t('logScanning'));
-      final targetFiles = <String, Uint8List>{};
+
+      // Group target files by their parent directory.
+      // Key = directory path (relative, /-separated), Value = {filename: content}
+      final byDir = <String, Map<String, Uint8List>>{};
       final allKeys = files.keys.toList()..sort();
       for (final path in allKeys) {
-        if (_isExcludedFile(path)) continue;
+        if (config.isExcludedFile(path)) continue;
         if (_isInsideExcludedDir(path)) continue;
         final ext = p.extension(path).toLowerCase();
-        if (config.isTargetExtension(ext)) {
-          targetFiles[path] = files[path]!;
-        }
+        if (!config.isTargetExtension(ext)) continue;
+
+        final dir = p.dirname(path);
+        final name = p.basename(path);
+        byDir.putIfAbsent(dir, () => {})[name] = files[path]!;
       }
 
-      if (targetFiles.isEmpty) {
-        // No target files: just copy the archive as-is
+      if (byDir.isEmpty) {
         log(i18n.t('logNoBrarchiveFound'));
         final outPath = _uniqueOutputPath(inputPath, outputDir, suffix: '_packed');
         await File(outPath).writeAsBytes(_encodeZip(archive));
@@ -123,37 +130,54 @@ class BrarchiveConverter {
         );
       }
 
-      // Group target files by their parent directory
-      final byDir = <String, Map<String, Uint8List>>{};
-      for (final entry in targetFiles.entries) {
-        final dir = p.dirname(entry.key);
-        final name = p.basename(entry.key);
-        byDir.putIfAbsent(dir, () => {})[name] = entry.value;
-      }
-
       log(i18n.t('logFoundTargets', {
-        'count': '${targetFiles.length}',
+        'count': '${byDir.values.fold(0, (s, m) => s + m.length)}',
         'dir': '${byDir.length} directories',
       }));
       log(i18n.t('logCreatingBrarchive'));
 
-      // Build new file map: remove target files, add __brarchive/*.brarchive
+      // Build new file map: copy all files, then remove target files and
+      // add __brarchive/*.brarchive entries.
       final newFiles = Map<String, Uint8List>.from(files);
-      for (final entry in targetFiles.entries) {
-        newFiles.remove(entry.key);
+
+      // Remove original target files
+      for (final dirEntry in byDir.entries) {
+        for (final fileName in dirEntry.value.keys) {
+          final fullPath = dirEntry.key.isEmpty ? fileName : '${dirEntry.key}/$fileName';
+          newFiles.remove(fullPath);
+        }
       }
-      for (final entry in byDir.entries) {
-        final dir = entry.key;
-        final brarchiveName = '${p.basename(dir.isEmpty ? "root" : dir)}.brarchive';
-        final brarchivePath = dir.isEmpty
-            ? '${config.outputDir}/$brarchiveName'
-            : '$dir/${config.outputDir}/$brarchiveName';
+
+      // Create brarchive files
+      for (final dirEntry in byDir.entries) {
+        final dir = dirEntry.key;
+        final entries = dirEntry.value;
+
+        final dirName = dir.isEmpty ? 'root' : p.basename(dir);
+        final brarchiveName = '$dirName.brarchive';
+
+        // Determine where __brarchive goes:
+        // - If dir is inside a special folder (subpacks), __brarchive goes
+        //   at the subpack root.
+        // - Otherwise, __brarchive goes at the archive root.
+        final brarchiveBase = _getBrarchiveBase(dir);
+
+        // The path inside __brarchive/ mirrors the source dir's parent
+        // relative to the brarchive base.
+        final relParent = _relativeParent(brarchiveBase, dir);
+        final brarchivePath = relParent.isEmpty
+            ? '$brarchiveBase/${config.outputDir}/$brarchiveName'
+            : '$brarchiveBase/${config.outputDir}/$relParent/$brarchiveName';
+
         log(i18n.t('logSerializing', {
-          'count': '${entry.value.length}',
+          'count': '${entries.length}',
           'output': brarchivePath,
         }));
-        newFiles[brarchivePath] = BrarchiveCodec.serialize(entry.value);
+        newFiles[brarchivePath] = BrarchiveCodec.serialize(entries);
       }
+
+      // Clean up empty directories (remove directory entries that are now empty)
+      _removeEmptyDirEntries(newFiles);
 
       log(i18n.t('logZipping'));
       final outArchive = _buildArchive(newFiles);
@@ -178,7 +202,10 @@ class BrarchiveConverter {
     }
   }
 
-  /// Unpack: restore original files from __brarchive/*.brarchive inside the archive.
+  // ------------------------------------------------------------------
+  // Unpack
+  // ------------------------------------------------------------------
+
   Future<ConvertResult> unpack({
     required String inputPath,
     required String outputDir,
@@ -189,8 +216,12 @@ class BrarchiveConverter {
       final archive = await _readArchive(inputPath);
       final files = _archiveToMap(archive);
 
-      // Find all __brarchive/*.brarchive files
+      // Find all __brarchive folders and the .brarchive files within them.
+      // Key = full path of .brarchive file, Value = its content
       final brarchiveFiles = <String, Uint8List>{};
+      // Track which __brarchive folder each file belongs to
+      final brarchiveFolderMap = <String, String>{}; // file path -> __brarchive dir path
+
       final allKeys = files.keys.toList()..sort();
       for (final path in allKeys) {
         final parts = _splitPath(path);
@@ -198,11 +229,12 @@ class BrarchiveConverter {
           (e) => e.toLowerCase() == config.outputDir.toLowerCase(),
         );
         if (brarchiveIdx == -1) continue;
-        if (brarchiveIdx != parts.length - 2) continue; // must be parent of file
         final ext = p.extension(path).toLowerCase();
-        if (ext == '.brarchive') {
-          brarchiveFiles[path] = files[path]!;
-        }
+        if (ext != '.brarchive') continue;
+
+        final brarchiveDir = parts.sublist(0, brarchiveIdx + 1).join('/');
+        brarchiveFiles[path] = files[path]!;
+        brarchiveFolderMap[path] = brarchiveDir;
       }
 
       if (brarchiveFiles.isEmpty) {
@@ -221,17 +253,34 @@ class BrarchiveConverter {
         'count': '${brarchiveFiles.length}',
       }));
 
-      // Deserialize each brarchive file and restore contents
+      // Build new file map
       final newFiles = Map<String, Uint8List>.from(files);
+
+      // Deserialize each brarchive file and restore contents
       for (final entry in brarchiveFiles.entries) {
         final brarchivePath = entry.key;
-        final dir = p.dirname(brarchivePath); // strip the __brarchive component
-        final parentDir = p.dirname(dir);
+        final brarchiveDir = brarchiveFolderMap[brarchivePath]!;
 
         log(i18n.t('logRestoringFiles', {'file': p.basename(brarchivePath)}));
+
         final restored = BrarchiveCodec.deserialize(entry.value);
+
+        // The parent of __brarchive is where files should be restored
+        final parentOfBrarchive = p.dirname(brarchiveDir);
+
+        // The relative path of the .brarchive file inside __brarchive/
+        // determines the target subdirectory.
+        // E.g., __brarchive/ui.brarchive → restore to parent/ui/
+        // E.g., __brarchive/ui/sub.brarchive → restore to parent/ui/sub/
+        final relInBrarchive = p.relative(brarchivePath, from: brarchiveDir);
+        final targetRelDir = p.withoutExtension(relInBrarchive);
+
+        final targetDir = targetRelDir == '.'
+            ? parentOfBrarchive
+            : '$parentOfBrarchive/$targetRelDir';
+
         for (final r in restored.entries) {
-          final restorePath = parentDir.isEmpty ? r.key : '$parentDir/${r.key}';
+          final restorePath = targetDir.isEmpty ? r.key : '$targetDir/${r.key}';
           log(i18n.t('logWritingFile', {
             'file': restorePath,
             'size': '${r.value.length}',
@@ -239,12 +288,9 @@ class BrarchiveConverter {
           newFiles[restorePath] = r.value;
         }
         log(i18n.t('logRestoredFiles', {'count': '${restored.length}'}));
-
-        // Remove the __brarchive folder entries
-        newFiles.remove(brarchivePath);
       }
 
-      // Remove any remaining __brarchive directory entries
+      // Remove all __brarchive folder entries and files
       newFiles.removeWhere((path, _) {
         final parts = _splitPath(path);
         return parts.any((e) => e.toLowerCase() == config.outputDir.toLowerCase());
@@ -273,7 +319,58 @@ class BrarchiveConverter {
     }
   }
 
-  // ---- Helpers ----
+  // ------------------------------------------------------------------
+  // Helpers
+  // ------------------------------------------------------------------
+
+  /// Determines the base directory for the __brarchive folder.
+  ///
+  /// If [dir] is inside a special folder (e.g. subpacks), the base is
+  /// the subpack root. Otherwise, the base is the archive root ('').
+  String _getBrarchiveBase(String dir) {
+    if (dir.isEmpty) return '';
+    final parts = _splitPath(dir);
+    for (final special in config.specialFolders) {
+      final idx = parts.indexWhere((e) => e.toLowerCase() == special.toLowerCase());
+      if (idx != -1 && idx + 1 < parts.length) {
+        // Inside a special folder; base is the subpack root
+        // (special folder + first child, e.g. "subpacks/light")
+        return parts.sublist(0, idx + 2).join('/');
+      }
+    }
+    return '';
+  }
+
+  /// Computes the parent path of [dir] relative to [base].
+  /// E.g., base="subpacks/light", dir="subpacks/light/ui" → "ui"
+  /// E.g., base="", dir="ui/sub" → "ui"
+  String _relativeParent(String base, String dir) {
+    if (dir.isEmpty) return '';
+    if (base.isEmpty) {
+      // dir relative to root
+      final parent = p.dirname(dir);
+      return parent == '.' ? '' : parent;
+    }
+    // dir relative to base
+    final rel = p.relative(dir, from: base);
+    final parent = p.dirname(rel);
+    return parent == '.' ? '' : parent;
+  }
+
+  /// Removes entries that represent empty directories (zip entries ending
+  /// with '/' whose contents have all been removed).
+  void _removeEmptyDirEntries(Map<String, Uint8List> files) {
+    final dirEntries = files.keys.where((k) => k.endsWith('/')).toList();
+    for (final dirEntry in dirEntries) {
+      final prefix = dirEntry;
+      final hasFiles = files.keys.any(
+        (k) => !k.endsWith('/') && k.startsWith(prefix),
+      );
+      if (!hasFiles) {
+        files.remove(dirEntry);
+      }
+    }
+  }
 
   Future<Archive> _readArchive(String path) async {
     final bytes = await File(path).readAsBytes();
@@ -310,10 +407,6 @@ class BrarchiveConverter {
 
   List<String> _splitPath(String path) {
     return path.replaceAll('\\', '/').split('/').where((s) => s.isNotEmpty).toList();
-  }
-
-  bool _isExcludedFile(String path) {
-    return config.isExcludedFile(path);
   }
 
   bool _isInsideExcludedDir(String path) {

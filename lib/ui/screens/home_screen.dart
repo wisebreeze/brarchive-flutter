@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -43,13 +42,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initDefaultOutput() async {
-    Directory? dir;
-    try {
-      dir = await getDownloadsDirectory();
-    } catch (_) {}
-    dir ??= await getApplicationDocumentsDirectory();
+    final dir = await NativeFilePicker.getDownloadsDirectory();
     if (mounted) {
-      _outputController.text = dir.path;
+      _outputController.text = dir;
     }
   }
 
@@ -92,10 +87,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final state = context.read<AppState>();
     final i18n = state.i18n;
 
-    final inputPath = _inputController.text.trim();
+    final rawInput = _inputController.text.trim();
     final outputDir = _outputController.text.trim();
 
-    if (inputPath.isEmpty) {
+    if (rawInput.isEmpty) {
       _showError(i18n.t('errNoInput'));
       return;
     }
@@ -103,21 +98,28 @@ class _HomeScreenState extends State<HomeScreen> {
       _showError(i18n.t('errNoOutput'));
       return;
     }
+
+    // Resolve content:// URIs to real file paths (Android SAF)
+    String inputPath = rawInput;
+    if (inputPath.startsWith('content://')) {
+      inputPath = await NativeFilePicker.resolveToFilePath(inputPath);
+    }
+
     final ext = p.extension(inputPath).toLowerCase();
     if (ext != '.zip' && ext != '.mcpack') {
       _showError(i18n.t('errInvalidInput'));
       return;
     }
 
-    // Check storage permission for manually-entered paths
-    final hasInputPerm = await PermissionService.hasStoragePermission(inputPath);
-    final hasOutputPerm = await PermissionService.hasStoragePermission(outputDir);
-    if (!hasInputPerm || !hasOutputPerm) {
+    // Check storage permission
+    final hasPerm = await PermissionService.hasStoragePermission(inputPath) &&
+        await PermissionService.hasStoragePermission(outputDir);
+    if (!hasPerm) {
       final granted = await _showPermissionDialog(i18n);
       if (!granted) return;
-      final recheckInput = await PermissionService.hasStoragePermission(inputPath);
-      final recheckOutput = await PermissionService.hasStoragePermission(outputDir);
-      if (!recheckInput || !recheckOutput) {
+      final recheck = await PermissionService.hasStoragePermission(inputPath) &&
+          await PermissionService.hasStoragePermission(outputDir);
+      if (!recheck) {
         _showError(i18n.t('errPermissionDenied'));
         return;
       }

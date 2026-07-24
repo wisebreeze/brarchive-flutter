@@ -45,6 +45,10 @@ class MainActivity : FlutterActivity() {
                             result.error("INVALID_URI", "uri is null", null)
                         }
                     }
+                    "getDownloadsDirectory" -> {
+                        val downloadsPath = getPublicDownloadsPath()
+                        result.success(downloadsPath)
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -200,5 +204,21 @@ class MainActivity : FlutterActivity() {
             return File(externalStorage, relative).absolutePath
         }
         return treeUri.toString()
+    }
+
+    /// Returns the public Downloads directory path.
+    private fun getPublicDownloadsPath(): String {
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            // Android 10+: use getExternalStoragePublicDirectory (deprecated but works)
+            @Suppress("DEPRECATION")
+            android.os.Environment.getExternalStoragePublicDirectory(
+                android.os.Environment.DIRECTORY_DOWNLOADS
+            ).absolutePath
+        } else {
+            @Suppress("DEPRECATION")
+            android.os.Environment.getExternalStoragePublicDirectory(
+                android.os.Environment.DIRECTORY_DOWNLOADS
+            ).absolutePath
+        }
     }
 }
