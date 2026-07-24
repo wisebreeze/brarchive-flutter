@@ -58,30 +58,55 @@ class _BrarchiveAppState extends State<BrarchiveApp> with WidgetsBindingObserver
           if (!_appState.initialized) {
             return MaterialApp(
               debugShowCheckedModeBanner: false,
-              theme: AppTheme.light(),
-              darkTheme: AppTheme.dark(),
+              theme: AppTheme._buildTheme(ColorScheme.fromSeed(
+                seedColor: const Color(0xFF6750A4),
+                brightness: Brightness.light,
+              )),
+              darkTheme: AppTheme._buildTheme(ColorScheme.fromSeed(
+                seedColor: const Color(0xFF6750A4),
+                brightness: Brightness.dark,
+              )),
               home: const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
               ),
             );
           }
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            title: _appState.i18n.t('appTitle'),
-            locale: _appState.i18n.effectiveLocale,
-            supportedLocales: I18n.supportedLocales,
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            theme: AppTheme.light(),
-            darkTheme: AppTheme.dark(),
-            themeMode: _appState.themeMode.toThemeMode(),
-            home: const HomeScreen(),
+          return FutureBuilder(
+            future: _buildThemes(_appState.useDynamicColor),
+            builder: (context, snapshot) {
+              final themes = snapshot.data;
+              return MaterialApp(
+                debugShowCheckedModeBanner: false,
+                title: _appState.i18n.t('appTitle'),
+                locale: _appState.i18n.effectiveLocale,
+                supportedLocales: I18n.supportedLocales,
+                localizationsDelegates: const [
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                theme: themes?.light ?? AppTheme._fallbackLight(),
+                darkTheme: themes?.dark ?? AppTheme._fallbackDark(),
+                themeMode: _appState.themeMode.toThemeMode(),
+                home: const HomeScreen(),
+              );
+            },
           );
         },
       ),
     );
   }
+
+  Future<_Themes> _buildThemes(bool dynamicColor) async {
+    return _Themes(
+      light: await AppTheme.light(dynamicColor: dynamicColor),
+      dark: await AppTheme.dark(dynamicColor: dynamicColor),
+    );
+  }
+}
+
+class _Themes {
+  final ThemeData light;
+  final ThemeData dark;
+  const _Themes({required this.light, required this.dark});
 }

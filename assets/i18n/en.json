@@ -50,5 +50,16 @@
   "logRestoredFiles": "Restored {count} file(s)",
   "logRemovingBrarchive": "Removing __brarchive folder",
   "actionPack": "Pack",
-  "actionUnpack": "Unpack"
+  "actionUnpack": "Unpack",
+  "settings": "Settings",
+  "githubRepo": "GitHub Repository",
+  "appearance": "Appearance",
+  "dynamicColor": "Dynamic color",
+  "dynamicColorDesc": "Use system wallpaper colors (Android 12+)",
+  "dynamicColorUnsupported": "Not supported on this platform",
+  "permissionRequired": "Storage permission required",
+  "permissionMessage": "This app needs storage permission to access the selected file or directory. Please grant the permission in system settings.",
+  "cancel": "Cancel",
+  "grant": "Grant",
+  "errPermissionDenied": "Storage permission denied. Cannot proceed."
 }

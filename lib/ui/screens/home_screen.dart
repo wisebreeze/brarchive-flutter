@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_state.dart';
 import '../../core/brarchive/brarchive_converter.dart';
 import '../../core/file_picker/native_file_picker.dart';
 import '../../core/i18n/i18n.dart';
+import '../../core/permissions/permission_service.dart';
 import '../../core/theme/app_theme.dart';
+import 'settings_screen.dart';
 
 /// Main screen of the brarchive converter app.
 ///
@@ -106,6 +109,21 @@ class _HomeScreenState extends State<HomeScreen> {
       _showError(i18n.t('errInvalidInput'));
       return;
     }
+
+    // Check storage permission for manually-entered paths
+    final hasInputPerm = await PermissionService.hasStoragePermission(inputPath);
+    final hasOutputPerm = await PermissionService.hasStoragePermission(outputDir);
+    if (!hasInputPerm || !hasOutputPerm) {
+      final granted = await _showPermissionDialog(i18n);
+      if (!granted) return;
+      final recheckInput = await PermissionService.hasStoragePermission(inputPath);
+      final recheckOutput = await PermissionService.hasStoragePermission(outputDir);
+      if (!recheckInput || !recheckOutput) {
+        _showError(i18n.t('errPermissionDenied'));
+        return;
+      }
+    }
+
     if (!File(inputPath).existsSync()) {
       _showError(i18n.t('errInputNotExist'));
       return;
@@ -143,6 +161,29 @@ class _HomeScreenState extends State<HomeScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<bool> _showPermissionDialog(I18n i18n) async {
+    if (!mounted) return false;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(i18n.t('permissionRequired')),
+        content: Text(i18n.t('permissionMessage')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(i18n.t('cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(i18n.t('grant')),
+          ),
+        ],
+      ),
+    );
+    if (result != true) return false;
+    return await PermissionService.requestStoragePermission();
   }
 
   void _showError(String message) {
@@ -232,10 +273,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 controller: _inputController,
                 decoration: InputDecoration(
                   hintText: i18n.t('inputHint'),
-                  prefixIcon: const Icon(Icons.input_outlined),
                   isDense: true,
                 ),
-                readOnly: true,
               ),
             ),
             const SizedBox(width: 8),
@@ -266,10 +305,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 controller: _outputController,
                 decoration: InputDecoration(
                   hintText: i18n.t('outputHint'),
-                  prefixIcon: const Icon(Icons.output_outlined),
                   isDense: true,
                 ),
-                readOnly: true,
               ),
             ),
             const SizedBox(width: 8),
@@ -384,63 +421,45 @@ class _HomeScreenState extends State<HomeScreen> {
       icon: const Icon(Icons.more_vert),
       tooltip: i18n.t('more'),
       onSelected: (value) async {
-        if (value.startsWith('lang:')) {
-          final code = value.substring(5);
-          await state.setLanguage(AppLanguageX.fromCode(code));
-        } else if (value.startsWith('theme:')) {
-          final code = value.substring(6);
-          await state.setThemeMode(AppThemeModeX.fromCode(code));
+        if (value == 'settings') {
+          if (!mounted) return;
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const SettingsScreen()),
+          );
+        } else if (value == 'github') {
+          await _launchUrl('https://github.com/wisebreeze/brarchive-flutter');
         }
       },
       itemBuilder: (context) => [
         PopupMenuItem<String>(
-          enabled: false,
-          child: Text(
-            i18n.t('language'),
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+          value: 'settings',
+          child: Row(
+            children: [
+              const Icon(Icons.settings_outlined),
+              const SizedBox(width: 12),
+              Text(i18n.t('settings')),
+            ],
           ),
         ),
-        _radioItem('lang:system', i18n.t('followSystem'),
-            state.i18n.language == AppLanguage.followSystem),
-        _radioItem('lang:en', i18n.t('english'),
-            state.i18n.language == AppLanguage.english),
-        _radioItem('lang:zh', i18n.t('chinese'),
-            state.i18n.language == AppLanguage.chinese),
         const PopupMenuDivider(),
         PopupMenuItem<String>(
-          enabled: false,
-          child: Text(
-            i18n.t('theme'),
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+          value: 'github',
+          child: Row(
+            children: [
+              const Icon(Icons.code),
+              const SizedBox(width: 12),
+              Text(i18n.t('githubRepo')),
+            ],
           ),
         ),
-        _radioItem('theme:system', i18n.t('themeFollowSystem'),
-            state.themeMode == AppThemeMode.followSystem),
-        _radioItem('theme:light', i18n.t('themeLight'),
-            state.themeMode == AppThemeMode.light),
-        _radioItem('theme:dark', i18n.t('themeDark'),
-            state.themeMode == AppThemeMode.dark),
       ],
     );
   }
 
-  PopupMenuItem<String> _radioItem(String value, String label, bool selected) {
-    return PopupMenuItem<String>(
-      value: value,
-      child: Row(
-        children: [
-          Icon(
-            selected ? Icons.radio_button_checked : Icons.radio_button_off,
-            size: 18,
-          ),
-          const SizedBox(width: 8),
-          Text(label),
-        ],
-      ),
-    );
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }

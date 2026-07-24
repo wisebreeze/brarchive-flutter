@@ -3,10 +3,10 @@ import '../core/i18n/i18n.dart';
 import '../core/settings/settings_service.dart';
 import '../core/theme/app_theme.dart';
 
-/// Central app state: i18n, theme mode, and processing status.
+/// Central app state: i18n, theme mode, dynamic color, and processing status.
 ///
-/// Notifies listeners when language or theme changes so the MaterialApp
-/// can rebuild with the new locale / theme.
+/// Notifies listeners when language, theme, or dynamic color changes so the
+/// MaterialApp can rebuild with the new locale / theme.
 class AppState extends ChangeNotifier {
   AppState(this._settings);
 
@@ -14,22 +14,26 @@ class AppState extends ChangeNotifier {
 
   late I18n _i18n;
   AppThemeMode _themeMode = AppThemeMode.followSystem;
+  bool _useDynamicColor = true;
   bool _initialized = false;
 
   I18n get i18n => _i18n;
   AppThemeMode get themeMode => _themeMode;
+  bool get useDynamicColor => _useDynamicColor;
   bool get initialized => _initialized;
 
   Future<void> init(Locale systemLocale) async {
     try {
       final language = await _settings.getLanguage();
       final themeMode = await _settings.getThemeMode();
+      final dynamicColor = await _settings.getDynamicColor();
       _i18n = await I18n.load(language, systemLocale);
       _themeMode = themeMode;
+      _useDynamicColor = dynamicColor;
     } catch (e) {
-      // Fallback to defaults if settings/i18n loading fails
       _i18n = await I18n.load(AppLanguage.followSystem, systemLocale);
       _themeMode = AppThemeMode.followSystem;
+      _useDynamicColor = true;
     }
     _initialized = true;
     notifyListeners();
@@ -50,6 +54,12 @@ class AppState extends ChangeNotifier {
   Future<void> setThemeMode(AppThemeMode mode) async {
     await _settings.setThemeMode(mode);
     _themeMode = mode;
+    notifyListeners();
+  }
+
+  Future<void> setDynamicColor(bool enabled) async {
+    await _settings.setDynamicColor(enabled);
+    _useDynamicColor = enabled;
     notifyListeners();
   }
 

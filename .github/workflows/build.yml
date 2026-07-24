@@ -85,7 +85,7 @@ jobs:
         run: |
           mkdir -p artifacts
           cp build/app/outputs/flutter-apk/app-${{ steps.bt.outputs.type }}.apk \
-            artifacts/brarchive-android-${{ steps.bt.outputs.type }}-v${{ github.run_number }}.apk
+            artifacts/brarchive-android-${{ steps.bt.outputs.type }}.apk
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -100,6 +100,8 @@ jobs:
         with:
           files: artifacts/*.apk
           generate_release_notes: true
+          draft: false
+          prerelease: false
 
   build-windows:
     name: Build Windows App
@@ -139,12 +141,11 @@ jobs:
       - name: Package Windows app
         shell: pwsh
         run: |
-          $version = (Get-Content pubspec.yaml | Select-String '^version:\s*(\S+)').Matches.Groups[1].Value.Split('+')[0]
           $buildType = '${{ steps.bt.outputs.type }}'
-          $outDir = "artifacts/brarchive-windows-$buildType-v${{ github.run_number }}"
+          $outDir = "artifacts/brarchive-windows-$buildType"
           New-Item -ItemType Directory -Force -Path $outDir | Out-Null
           Copy-Item -Path "build\windows\x64\runner\Release\*" -Destination $outDir -Recurse
-          Compress-Archive -Path "$outDir\*" -DestinationPath "artifacts/brarchive-windows-$buildType-v${{ github.run_number }}.zip" -Force
+          Compress-Archive -Path "$outDir\*" -DestinationPath "artifacts/brarchive-windows-$buildType.zip" -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -158,4 +159,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/*.zip
-          generate_release_notes: true
+          generate_release_notes: false

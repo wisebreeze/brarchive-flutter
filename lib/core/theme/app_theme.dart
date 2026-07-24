@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 
 /// Theme mode preference for the app.
 enum AppThemeMode { followSystem, light, dark }
@@ -44,20 +45,43 @@ class AppTheme {
 
   static const _seedColor = Color(0xFF6750A4);
 
-  static ThemeData light() {
-    final colorScheme = ColorScheme.fromSeed(
+  /// Synchronous fallback themes used before async dynamic color resolves.
+  static ThemeData _fallbackLight() => _buildTheme(ColorScheme.fromSeed(
+        seedColor: _seedColor,
+        brightness: Brightness.light,
+      ));
+
+  static ThemeData _fallbackDark() => _buildTheme(ColorScheme.fromSeed(
+        seedColor: _seedColor,
+        brightness: Brightness.dark,
+      ));
+
+  /// Builds light theme. Uses dynamic color scheme if [dynamicColor] is true
+  /// and the platform supports it (Android 12+).
+  static Future<ThemeData> light({bool dynamicColor = true}) async {
+    if (dynamicColor) {
+      final systemColors = await DynamicColorPlugin.getCorePalette();
+      if (systemColors != null) {
+        return _buildTheme(systemColors.toColorScheme(brightness: Brightness.light));
+      }
+    }
+    return _buildTheme(ColorScheme.fromSeed(
       seedColor: _seedColor,
       brightness: Brightness.light,
-    );
-    return _buildTheme(colorScheme);
+    ));
   }
 
-  static ThemeData dark() {
-    final colorScheme = ColorScheme.fromSeed(
+  static Future<ThemeData> dark({bool dynamicColor = true}) async {
+    if (dynamicColor) {
+      final systemColors = await DynamicColorPlugin.getCorePalette();
+      if (systemColors != null) {
+        return _buildTheme(systemColors.toColorScheme(brightness: Brightness.dark));
+      }
+    }
+    return _buildTheme(ColorScheme.fromSeed(
       seedColor: _seedColor,
       brightness: Brightness.dark,
-    );
-    return _buildTheme(colorScheme);
+    ));
   }
 
   static ThemeData _buildTheme(ColorScheme colorScheme) {

@@ -15,6 +15,7 @@ import java.io.FileOutputStream
 class MainActivity : FlutterActivity() {
 
     private val channelName = "com.wisebreeze.brarchive/file_picker"
+    private val permChannelName = "com.wisebreeze.brarchive/permissions"
     private val requestCodeFile = 1001
     private val requestCodeDir = 1002
 
@@ -47,6 +48,61 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, permChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "hasStoragePermission" -> {
+                        val path = call.argument<String>("path") ?: ""
+                        result.success(checkStoragePermission(path))
+                    }
+                    "requestStoragePermission" -> {
+                        requestManageStoragePermission()
+                        result.success(checkStoragePermission(""))
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    /// Checks if the app can read/write the given path.
+    /// On Android 11+, MANAGE_EXTERNAL_STORAGE is required for paths outside
+    /// app-specific dirs. On older versions, READ/WRITE_EXTERNAL_STORAGE.
+    private fun checkStoragePermission(path: String): Boolean {
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            android.os.Environment.isExternalStorageManager()
+        } else {
+            val readPerm = checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+            val writePerm = checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            readPerm == android.content.pm.PackageManager.PERMISSION_GRANTED &&
+            writePerm == android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    /// Opens system settings to grant MANAGE_EXTERNAL_STORAGE (Android 11+)
+    /// or requests READ/WRITE_EXTERNAL_STORAGE (Android 10 and below).
+    private fun requestManageStoragePermission() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            try {
+                val intent = Intent(
+                    android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                    android.net.Uri.parse("package:$packageName")
+                )
+                startActivity(intent)
+            } catch (e: Exception) {
+                val intent = Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                startActivity(intent)
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            requestPermissions(
+                arrayOf(
+                    android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ),
+                2001
+            )
+        }
     }
 
     private fun openFilePicker(extensions: List<String>) {
