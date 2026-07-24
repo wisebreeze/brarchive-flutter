@@ -11,7 +11,6 @@ import '../../core/brarchive/brarchive_converter.dart';
 import '../../core/file_picker/native_file_picker.dart';
 import '../../core/i18n/i18n.dart';
 import '../../core/permissions/permission_service.dart';
-import '../../core/theme/app_theme.dart';
 import 'settings_screen.dart';
 
 /// Main screen of the brarchive converter app.
