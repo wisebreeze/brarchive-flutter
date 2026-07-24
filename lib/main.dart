@@ -58,14 +58,8 @@ class _BrarchiveAppState extends State<BrarchiveApp> with WidgetsBindingObserver
           if (!_appState.initialized) {
             return MaterialApp(
               debugShowCheckedModeBanner: false,
-              theme: AppTheme._buildTheme(ColorScheme.fromSeed(
-                seedColor: const Color(0xFF6750A4),
-                brightness: Brightness.light,
-              )),
-              darkTheme: AppTheme._buildTheme(ColorScheme.fromSeed(
-                seedColor: const Color(0xFF6750A4),
-                brightness: Brightness.dark,
-              )),
+              theme: AppTheme.fallbackLight(),
+              darkTheme: AppTheme.fallbackDark(),
               home: const Scaffold(
                 body: Center(child: CircularProgressIndicator()),
               ),
@@ -85,8 +79,8 @@ class _BrarchiveAppState extends State<BrarchiveApp> with WidgetsBindingObserver
                   GlobalWidgetsLocalizations.delegate,
                   GlobalCupertinoLocalizations.delegate,
                 ],
-                theme: themes?.light ?? AppTheme._fallbackLight(),
-                darkTheme: themes?.dark ?? AppTheme._fallbackDark(),
+                theme: themes?.light ?? AppTheme.fallbackLight(),
+                darkTheme: themes?.dark ?? AppTheme.fallbackDark(),
                 themeMode: _appState.themeMode.toThemeMode(),
                 home: const HomeScreen(),
               );

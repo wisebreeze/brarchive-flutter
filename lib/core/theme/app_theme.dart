@@ -46,12 +46,12 @@ class AppTheme {
   static const _seedColor = Color(0xFF6750A4);
 
   /// Synchronous fallback themes used before async dynamic color resolves.
-  static ThemeData _fallbackLight() => _buildTheme(ColorScheme.fromSeed(
+  static ThemeData fallbackLight() => buildTheme(ColorScheme.fromSeed(
         seedColor: _seedColor,
         brightness: Brightness.light,
       ));
 
-  static ThemeData _fallbackDark() => _buildTheme(ColorScheme.fromSeed(
+  static ThemeData fallbackDark() => buildTheme(ColorScheme.fromSeed(
         seedColor: _seedColor,
         brightness: Brightness.dark,
       ));
@@ -84,7 +84,7 @@ class AppTheme {
     ));
   }
 
-  static ThemeData _buildTheme(ColorScheme colorScheme) {
+  static ThemeData buildTheme(ColorScheme colorScheme) {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
