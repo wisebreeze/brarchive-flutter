@@ -178,6 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
       log: _log,
       i18n: i18n,
       config: ConverterConfig(
+        includeExts: _parseExts(state.customExts),
         packImages: state.packImages,
         removeProcessedFiles: state.removeProcessedFiles,
         skipEmptyEntries: state.skipEmptyEntries,
@@ -240,6 +241,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<Directory> _getTempDir() async {
     return await getTemporaryDirectory();
+  }
+
+  /// Parses a comma-separated extension string into a list with dots.
+  /// e.g. "json,json5,ui" -> [".json", ".json5", ".ui"]
+  List<String> _parseExts(String input) {
+    return input
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .map((e) => e.startsWith('.') ? e : '.$e')
+        .toList();
   }
 
   Future<bool> _showPermissionDialog(I18n i18n) async {

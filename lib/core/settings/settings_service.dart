@@ -12,6 +12,7 @@ class SettingsService {
   static const _removeProcessedFilesKey = 'remove_processed_files';
   static const _skipEmptyEntriesKey = 'skip_empty_entries';
   static const _utf8OnlyKey = 'utf8_only';
+  static const _customExtsKey = 'custom_exts';
 
   Future<AppLanguage> getLanguage() async {
     final prefs = await SharedPreferences.getInstance();
@@ -81,5 +82,15 @@ class SettingsService {
   Future<void> setUtf8Only(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_utf8OnlyKey, enabled);
+  }
+
+  Future<String> getCustomExts() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_customExtsKey) ?? 'json,json5,ui';
+  }
+
+  Future<void> setCustomExts(String exts) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_customExtsKey, exts);
   }
 }

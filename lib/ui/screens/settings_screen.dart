@@ -18,6 +18,21 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  late TextEditingController _extsController;
+
+  @override
+  void initState() {
+    super.initState();
+    final state = context.read<AppState>();
+    _extsController = TextEditingController(text: state.customExts);
+  }
+
+  @override
+  void dispose() {
+    _extsController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
@@ -44,6 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildRemoveProcessedTile(state, i18n),
           _buildSkipEmptyEntriesTile(state, i18n),
           _buildUtf8OnlyTile(state, i18n),
+          _buildCustomExtsTile(state, i18n),
           const SizedBox(height: 8),
           _sectionHeader(i18n.t('storage'), cs),
           _buildClearCacheTile(state, i18n),
@@ -223,6 +239,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
       subtitle: Text(i18n.t('utf8OnlyDesc')),
       value: state.utf8Only,
       onChanged: (v) => state.setUtf8Only(v),
+    );
+  }
+
+  Widget _buildCustomExtsTile(AppState state, I18n i18n) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            i18n.t('customExts'),
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            i18n.t('customExtsDesc'),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _extsController,
+            decoration: InputDecoration(
+              hintText: 'json,json5,ui',
+              isDense: true,
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.check, size: 20),
+                tooltip: i18n.t('save'),
+                onPressed: () {
+                  state.setCustomExts(_extsController.text.trim());
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(i18n.t('saved'))),
+                  );
+                },
+              ),
+            ),
+            onSubmitted: (value) {
+              state.setCustomExts(value.trim());
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(i18n.t('saved'))),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 

@@ -19,6 +19,7 @@ class AppState extends ChangeNotifier {
   bool _removeProcessedFiles = true;
   bool _skipEmptyEntries = true;
   bool _utf8Only = true;
+  String _customExts = 'json,json5,ui';
   bool _initialized = false;
 
   I18n get i18n => _i18n;
@@ -28,6 +29,7 @@ class AppState extends ChangeNotifier {
   bool get removeProcessedFiles => _removeProcessedFiles;
   bool get skipEmptyEntries => _skipEmptyEntries;
   bool get utf8Only => _utf8Only;
+  String get customExts => _customExts;
   bool get initialized => _initialized;
 
   Future<void> init(Locale systemLocale) async {
@@ -39,6 +41,7 @@ class AppState extends ChangeNotifier {
       final removeProcessed = await _settings.getRemoveProcessedFiles();
       final skipEmpty = await _settings.getSkipEmptyEntries();
       final utf8Only = await _settings.getUtf8Only();
+      final customExts = await _settings.getCustomExts();
       _i18n = await I18n.load(language, systemLocale);
       _themeMode = themeMode;
       _useDynamicColor = dynamicColor;
@@ -46,6 +49,7 @@ class AppState extends ChangeNotifier {
       _removeProcessedFiles = removeProcessed;
       _skipEmptyEntries = skipEmpty;
       _utf8Only = utf8Only;
+      _customExts = customExts;
     } catch (e) {
       _i18n = await I18n.load(AppLanguage.followSystem, systemLocale);
       _themeMode = AppThemeMode.followSystem;
@@ -54,6 +58,7 @@ class AppState extends ChangeNotifier {
       _removeProcessedFiles = true;
       _skipEmptyEntries = true;
       _utf8Only = true;
+      _customExts = 'json,json5,ui';
     }
     _initialized = true;
     notifyListeners();
@@ -104,6 +109,12 @@ class AppState extends ChangeNotifier {
   Future<void> setUtf8Only(bool enabled) async {
     await _settings.setUtf8Only(enabled);
     _utf8Only = enabled;
+    notifyListeners();
+  }
+
+  Future<void> setCustomExts(String exts) async {
+    await _settings.setCustomExts(exts);
+    _customExts = exts;
     notifyListeners();
   }
 
