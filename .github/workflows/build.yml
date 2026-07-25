@@ -160,3 +160,113 @@ jobs:
         with:
           files: artifacts/*.zip
           generate_release_notes: false
+
+  build-linux:
+    name: Build Linux App
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ninja-build libgtk-3-dev clang cmake pkg-config
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Create Linux platform files
+        run: flutter create --platforms=linux --org com.wisebreeze --project-name brarchive .
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Determine build type
+        id: bt
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "type=${{ inputs.build_type }}" >> $GITHUB_OUTPUT
+          else
+            echo "type=release" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build Linux
+        run: flutter build linux --${{ steps.bt.outputs.type }}
+
+      - name: Package Linux app
+        run: |
+          mkdir -p artifacts
+          cd build/linux/x64/release/bundle
+          tar czf ../../../artifacts/brarchive-linux-${{ steps.bt.outputs.type }}.tar.gz .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-app
+          path: artifacts/*.tar.gz
+          retention-days: 30
+
+      - name: Release on tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*.tar.gz
+          generate_release_notes: false
+
+  build-ios:
+    name: Build iOS (unsigned)
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Create iOS platform files
+        run: flutter create --platforms=ios --org com.wisebreeze --project-name brarchive .
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Build iOS (no codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: Package iOS app
+        run: |
+          mkdir -p artifacts
+          cd build/ios/iphoneos
+          zip -r ../../../artifacts/brarchive-ios-release.zip Runner.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app
+          path: artifacts/*.zip
+          retention-days: 30
+
+      - name: Release on tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*.zip
+          generate_release_notes: false

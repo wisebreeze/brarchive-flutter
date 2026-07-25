@@ -71,5 +71,11 @@
   "removeProcessedFiles": "删除原始文件",
   "removeProcessedFilesDesc": "打包到 brarchive 后删除源文件",
   "skipEmptyEntries": "跳过空条目",
-  "skipEmptyEntriesDesc": "解包时不将 0 字节的条目覆盖已有文件"
+  "skipEmptyEntriesDesc": "解包时不将 0 字节的条目覆盖已有文件",
+  "storage": "存储",
+  "clearCache": "清理缓存",
+  "clearCacheDesc": "删除应用产生的临时文件",
+  "clearCacheConfirm": "确定要清理缓存吗？这将删除临时文件。",
+  "clear": "清理",
+  "cacheCleared": "缓存已清理（释放 {size}）"
 }

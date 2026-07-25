@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -36,10 +37,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _busy = false;
 
+  static const _shareChannel = MethodChannel('com.wisebreeze.brarchive/share');
+
   @override
   void initState() {
     super.initState();
     _initDefaultOutput();
+    _checkSharedFile();
+    _shareChannel.setMethodCallHandler((call) async {
+      if (call.method == 'onFileDropped' && call.arguments is String) {
+        final path = call.arguments as String;
+        if (mounted) {
+          setState(() => _inputController.text = path);
+        }
+      }
+      return null;
+    });
+  }
+
+  Future<void> _checkSharedFile() async {
+    try {
+      final path = await _shareChannel.invokeMethod<String>('getSharedFile');
+      if (path != null && path.isNotEmpty && mounted) {
+        _inputController.text = path;
+      }
+    } catch (_) {}
   }
 
   Future<void> _initDefaultOutput() async {

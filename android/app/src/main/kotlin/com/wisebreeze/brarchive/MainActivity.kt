@@ -16,14 +16,31 @@ class MainActivity : FlutterActivity() {
 
     private val channelName = "com.wisebreeze.brarchive/file_picker"
     private val permChannelName = "com.wisebreeze.brarchive/permissions"
+    private val shareChannelName = "com.wisebreeze.brarchive/share"
     private val requestCodeFile = 1001
     private val requestCodeDir = 1002
 
     private var pendingFileResult: MethodChannel.Result? = null
     private var pendingDirResult: MethodChannel.Result? = null
+    private var initialSharedPath: String? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // Handle shared file from intent
+        handleSharedIntent(intent)
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, shareChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "getSharedFile" -> {
+                        result.success(initialSharedPath)
+                        initialSharedPath = null
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -219,6 +236,21 @@ class MainActivity : FlutterActivity() {
             android.os.Environment.getExternalStoragePublicDirectory(
                 android.os.Environment.DIRECTORY_DOWNLOADS
             ).absolutePath
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleSharedIntent(intent)
+    }
+
+    private fun handleSharedIntent(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_SEND) {
+            val uri = intent.getParcelableExtra<android.net.Uri>(Intent.EXTRA_STREAM)
+            if (uri != null) {
+                val path = copyContentUriToCache(uri)
+                initialSharedPath = path
+            }
         }
     }
 }

@@ -174,4 +174,10 @@ const Map<String, String> _fallbackEn = {
   'removeProcessedFilesDesc': 'Remove source files after packing into brarchive',
   'skipEmptyEntries': 'Skip empty entries',
   'skipEmptyEntriesDesc': "Don't restore 0-byte entries from brarchive over existing files",
+  'storage': 'Storage',
+  'clearCache': 'Clear cache',
+  'clearCacheDesc': 'Delete temporary files created by the app',
+  'clearCacheConfirm': 'Are you sure you want to clear the cache? This will remove temporary files.',
+  'clear': 'Clear',
+  'cacheCleared': 'Cache cleared ({size} freed)',
 };

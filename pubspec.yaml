@@ -2,7 +2,7 @@ name: brarchive
 description: "Bedrock Archive tool - convert between zip/mcpack and brarchive format."
 publish_to: 'none'
 
-version: 1.6.0+6
+version: 2.0.0+7
 
 environment:
   sdk: ^3.12.2
@@ -31,3 +31,4 @@ flutter:
   assets:
     - assets/i18n/en.json
     - assets/i18n/zh.json
+    - assets/licenses/apache-2.0.txt
