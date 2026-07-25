@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart' as _pathProvider;
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -181,6 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
         packImages: state.packImages,
         removeProcessedFiles: state.removeProcessedFiles,
         skipEmptyEntries: state.skipEmptyEntries,
+        utf8Only: state.utf8Only,
       ),
     );
 
@@ -220,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final tempDir = await _getTempDir();
       final file = await File('${tempDir.path}/brarchive_log.txt').writeAsString(text);
       final xFile = XFile(file.path);
-      final result = await Share.shareXFiles(
+      await Share.shareXFiles(
         [xFile],
         subject: 'brarchive console log',
         text: text,
@@ -238,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<Directory> _getTempDir() async {
-    return await _pathProvider.getTemporaryDirectory();
+    return await getTemporaryDirectory();
   }
 
   Future<bool> _showPermissionDialog(I18n i18n) async {

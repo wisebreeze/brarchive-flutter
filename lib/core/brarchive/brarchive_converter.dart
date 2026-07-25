@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
@@ -24,6 +25,12 @@ class ConverterConfig {
   /// unpack, so they don't overwrite existing non-empty files.
   final bool skipEmptyEntries;
 
+  /// Whether to only pack UTF-8 encoded files. When enabled, files that
+  /// are not valid UTF-8 (e.g. binary files with text extensions) are
+  /// skipped during packing. Does not apply to image files when packImages
+  /// is enabled.
+  final bool utf8Only;
+
   const ConverterConfig({
     this.includeExts = const ['.json', '.json5', '.ui'],
     this.excludeDirs = const ['textures', 'materials', 'texts', 'sounds'],
@@ -33,6 +40,7 @@ class ConverterConfig {
     this.packImages = false,
     this.removeProcessedFiles = true,
     this.skipEmptyEntries = true,
+    this.utf8Only = true,
   });
 
   bool isTargetExtension(String ext) {
@@ -270,7 +278,19 @@ Future<_IsolateResult> _packIsolateImpl(_PackParams params) async {
     if (dir == '.' || dir.isEmpty) continue;
 
     final name = p.basename(path);
-    byDir.putIfAbsent(dir, () => {})[name] = files[path]!;
+    final content = files[path]!;
+
+    // If utf8Only is enabled and this is not an image file, check that
+    // the content is valid UTF-8 before including it.
+    if (config.utf8Only) {
+      final isImage = const ['.png', '.jpg', '.jpeg', '.tga'].contains(ext);
+      if (!isImage && !_isValidUtf8(content)) {
+        logs.add('Skipping non-UTF-8 file: $path');
+        continue;
+      }
+    }
+
+    byDir.putIfAbsent(dir, () => {})[name] = content;
   }
 
   if (byDir.isEmpty) {
@@ -482,6 +502,18 @@ Future<_IsolateResult> _unpackIsolateEntry(_UnpackParams params) async {
 // --------------------------------------------------------------------
 // Helpers (top-level for isolate access)
 // --------------------------------------------------------------------
+
+/// Checks whether [data] is valid UTF-8 encoded text.
+/// Returns false for binary data or text in other encodings (GBK, etc.).
+bool _isValidUtf8(Uint8List data) {
+  if (data.isEmpty) return true;
+  try {
+    utf8.decode(data, allowMalformed: false);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
 
 /// Determines the base directory for the __brarchive folder.
 ///

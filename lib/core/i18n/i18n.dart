@@ -174,6 +174,8 @@ const Map<String, String> _fallbackEn = {
   'removeProcessedFilesDesc': 'Remove source files after packing into brarchive',
   'skipEmptyEntries': 'Skip empty entries',
   'skipEmptyEntriesDesc': "Don't restore 0-byte entries from brarchive over existing files",
+  'utf8Only': 'UTF-8 only',
+  'utf8OnlyDesc': 'Skip files that are not valid UTF-8 during packing',
   'storage': 'Storage',
   'clearCache': 'Clear cache',
   'clearCacheDesc': 'Delete temporary files created by the app',

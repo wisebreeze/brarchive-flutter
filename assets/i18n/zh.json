@@ -72,6 +72,8 @@
   "removeProcessedFilesDesc": "打包到 brarchive 后删除源文件",
   "skipEmptyEntries": "跳过空条目",
   "skipEmptyEntriesDesc": "解包时不将 0 字节的条目覆盖已有文件",
+  "utf8Only": "仅 UTF-8 编码",
+  "utf8OnlyDesc": "打包时跳过非 UTF-8 编码的文件",
   "storage": "存储",
   "clearCache": "清理缓存",
   "clearCacheDesc": "删除应用产生的临时文件",

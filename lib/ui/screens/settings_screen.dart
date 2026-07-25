@@ -43,6 +43,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildPackImagesTile(state, i18n),
           _buildRemoveProcessedTile(state, i18n),
           _buildSkipEmptyEntriesTile(state, i18n),
+          _buildUtf8OnlyTile(state, i18n),
           const SizedBox(height: 8),
           _sectionHeader(i18n.t('storage'), cs),
           _buildClearCacheTile(state, i18n),
@@ -213,6 +214,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       subtitle: Text(i18n.t('skipEmptyEntriesDesc')),
       value: state.skipEmptyEntries,
       onChanged: (v) => state.setSkipEmptyEntries(v),
+    );
+  }
+
+  Widget _buildUtf8OnlyTile(AppState state, I18n i18n) {
+    return SwitchListTile(
+      title: Text(i18n.t('utf8Only')),
+      subtitle: Text(i18n.t('utf8OnlyDesc')),
+      value: state.utf8Only,
+      onChanged: (v) => state.setUtf8Only(v),
     );
   }
 

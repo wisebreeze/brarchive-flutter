@@ -11,6 +11,7 @@ class SettingsService {
   static const _packImagesKey = 'pack_images';
   static const _removeProcessedFilesKey = 'remove_processed_files';
   static const _skipEmptyEntriesKey = 'skip_empty_entries';
+  static const _utf8OnlyKey = 'utf8_only';
 
   Future<AppLanguage> getLanguage() async {
     final prefs = await SharedPreferences.getInstance();
@@ -70,5 +71,15 @@ class SettingsService {
   Future<void> setSkipEmptyEntries(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_skipEmptyEntriesKey, enabled);
+  }
+
+  Future<bool> getUtf8Only() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_utf8OnlyKey) ?? true;
+  }
+
+  Future<void> setUtf8Only(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_utf8OnlyKey, enabled);
   }
 }
