@@ -251,18 +251,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final size = _dirSize(cacheDir);
         cacheDir.deleteSync(recursive: true);
         cacheDir.createSync(recursive: true);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(i18n.t('cacheCleared', {'size': _formatSize(size)}))),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(i18n.t('logError', {'error': e.toString()}))),
+          SnackBar(content: Text(i18n.t('cacheCleared', {'size': _formatSize(size)}))),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(i18n.t('logError', {'error': e.toString()}))),
+      );
     }
   }
 
