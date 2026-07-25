@@ -221,11 +221,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       leading: const Icon(Icons.cleaning_services_outlined),
       title: Text(i18n.t('clearCache')),
       subtitle: Text(i18n.t('clearCacheDesc')),
-      onTap: () => _clearCache(context, i18n),
+      onTap: () => _clearCache(i18n),
     );
   }
 
-  Future<void> _clearCache(BuildContext context, I18n i18n) async {
+  Future<void> _clearCache(I18n i18n) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
