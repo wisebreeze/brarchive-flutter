@@ -34,7 +34,7 @@
 | 平台 | 状态 | 产物 |
 |------|------|------|
 | Android | 稳定 | APK |
-| iOS | 未签名（需自签安装） | Runner.app |
+| iOS | 未签名（需自签安装） | IPA |
 | Windows | 稳定 | ZIP |
 | macOS | 稳定 | ZIP |
 | Linux | 稳定 | tar.gz |
@@ -65,7 +65,17 @@ flutter build windows --release
 
 ### 下载
 
-从 [GitHub Releases](https://github.com/wisebreeze/brarchive-flutter/releases) 下载最新的 APK 或 Windows 压缩包。`main` 分支上每次成功的构建运行也会附带相应产物。
+从 [GitHub Releases](https://github.com/wisebreeze/brarchive-flutter/releases) 下载对应平台的最新版本。`main` 分支上每次成功的构建运行也会附带相应产物。
+
+### 安装方法
+
+| 平台 | 文件 | 说明 |
+|------|------|------|
+| Android | `brarchive-android-release.apk` | 点击安装，如提示"未知来源"请在设置中允许。首次运行时授予存储权限。 |
+| Windows | `brarchive-windows-release.zip` | 解压后运行 `brarchive.exe`。可右键创建桌面快捷方式。 |
+| macOS | `brarchive-macos-release.zip` | 解压后将 `brarchive.app` 拖入应用程序文件夹。首次打开右键 → 打开以绕过 Gatekeeper。 |
+| Linux | `brarchive-linux-release.tar.gz` | 解压后在 bundle 目录中运行 `./brarchive`。 |
+| iOS | `brarchive-ios-release.ipa` | 通过 [AltStore](https://altstore.io) 或 [Sideloadly](https://sideloadly.io) 自签安装。自签证书有效期 7 天。 |
 
 ## 使用方法
 

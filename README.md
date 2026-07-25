@@ -34,7 +34,7 @@ The binary format is little-endian and consists of a 16-byte header (magic, entr
 | Platform | Status | Artifact |
 |----------|--------|----------|
 | Android  | Stable | APK |
-| iOS      | Unsigned (sideload required) | Runner.app |
+| iOS      | Unsigned (sideload required) | IPA |
 | Windows  | Stable | ZIP |
 | macOS    | Stable | ZIP |
 | Linux    | Stable | tar.gz |
@@ -65,7 +65,17 @@ Pre-built binaries for every release are available on the [releases page](https:
 
 ### Download
 
-Download the latest APK or Windows archive from [GitHub Releases](https://github.com/wisebreeze/brarchive-flutter/releases). Artifacts are also attached to each successful workflow run on the `main` branch.
+Download the latest release for your platform from [GitHub Releases](https://github.com/wisebreeze/brarchive-flutter/releases). Artifacts are also attached to each successful workflow run on the `main` branch.
+
+### Installation
+
+| Platform | File | Instructions |
+|----------|------|-------------|
+| Android | `brarchive-android-release.apk` | Tap to install. Allow "install from unknown sources" if prompted. Grant storage permission on first launch. |
+| Windows | `brarchive-windows-release.zip` | Extract and run `brarchive.exe`. Right-click to create a desktop shortcut. |
+| macOS | `brarchive-macos-release.zip` | Extract and drag `brarchive.app` to Applications. Right-click → Open on first launch to bypass Gatekeeper. |
+| Linux | `brarchive-linux-release.tar.gz` | Extract and run `./brarchive` from the bundle directory. |
+| iOS | `brarchive-ios-release.ipa` | Sideload via [AltStore](https://altstore.io) or [Sideloadly](https://sideloadly.io). Self-signed certificates expire after 7 days. |
 
 ## Usage
 
