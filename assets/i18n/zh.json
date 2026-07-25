@@ -77,5 +77,7 @@
   "clearCacheDesc": "删除应用产生的临时文件",
   "clearCacheConfirm": "确定要清理缓存吗？这将删除临时文件。",
   "clear": "清理",
-  "cacheCleared": "缓存已清理（释放 {size}）"
+  "cacheCleared": "缓存已清理（释放 {size}）",
+  "clearConsole": "清空控制台",
+  "shareLogs": "分享日志"
 }

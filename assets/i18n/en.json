@@ -77,5 +77,7 @@
   "clearCacheDesc": "Delete temporary files created by the app",
   "clearCacheConfirm": "Are you sure you want to clear the cache? This will remove temporary files.",
   "clear": "Clear",
-  "cacheCleared": "Cache cleared ({size} freed)"
+  "cacheCleared": "Cache cleared ({size} freed)",
+  "clearConsole": "Clear console",
+  "shareLogs": "Share logs"
 }

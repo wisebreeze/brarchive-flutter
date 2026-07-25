@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_state.dart';
@@ -206,6 +207,16 @@ class _HomeScreenState extends State<HomeScreen> {
       _showSnack(i18n.t('statusError'), isError: true);
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _shareLogs(I18n i18n) async {
+    final text = _consoleController.text;
+    if (text.isEmpty) return;
+    try {
+      await Share.share(text, subject: 'brarchive console log');
+    } catch (e) {
+      _showSnack(i18n.t('logError', {'error': e.toString()}), isError: true);
     }
   }
 
@@ -418,14 +429,22 @@ class _HomeScreenState extends State<HomeScreen> {
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const Spacer(),
-            if (_consoleController.text.isNotEmpty)
+            if (_consoleController.text.isNotEmpty) ...[
+              IconButton(
+                icon: const Icon(Icons.share_outlined, size: 20),
+                tooltip: i18n.t('shareLogs'),
+                onPressed: _busy
+                    ? null
+                    : () => _shareLogs(i18n),
+              ),
               IconButton(
                 icon: const Icon(Icons.delete_outline, size: 20),
-                tooltip: 'Clear',
+                tooltip: i18n.t('clearConsole'),
                 onPressed: _busy
                     ? null
                     : () => setState(() => _consoleController.clear()),
               ),
+            ],
           ],
         ),
         const SizedBox(height: 6),

@@ -180,4 +180,6 @@ const Map<String, String> _fallbackEn = {
   'clearCacheConfirm': 'Are you sure you want to clear the cache? This will remove temporary files.',
   'clear': 'Clear',
   'cacheCleared': 'Cache cleared ({size} freed)',
+  'clearConsole': 'Clear console',
+  'shareLogs': 'Share logs',
 };
