@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/wisebreeze/brarchive-flutter?include_prereleases)](https://github.com/wisebreeze/brarchive-flutter/releases)
 [![License](https://img.shields.io/github/license/wisebreeze/brarchive-flutter?color=blue)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-stable-02569B?logo=flutter)](https://flutter.dev)
-[![Platform](https://img.shields.io/badge/platform-Android%20%7C%20Windows-lightgrey)](#支持平台)
+[![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](#支持平台)
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
@@ -31,10 +31,13 @@
 
 ## 支持平台
 
-| 平台 | 状态 |
-|------|------|
-| Android | 稳定 |
-| Windows | 稳定 |
+| 平台 | 状态 | 产物 |
+|------|------|------|
+| Android | 稳定 | APK |
+| iOS | 未签名（需自签安装） | Runner.app |
+| Windows | 稳定 | ZIP |
+| macOS | 稳定 | ZIP |
+| Linux | 稳定 | tar.gz |
 
 ## 快速开始
 

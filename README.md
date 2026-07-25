@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/wisebreeze/brarchive-flutter?include_prereleases)](https://github.com/wisebreeze/brarchive-flutter/releases)
 [![License](https://img.shields.io/github/license/wisebreeze/brarchive-flutter?color=blue)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-stable-02569B?logo=flutter)](https://flutter.dev)
-[![Platform](https://img.shields.io/badge/platform-Android%20%7C%20Windows-lightgrey)](#supported-platforms)
+[![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](#supported-platforms)
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
@@ -31,10 +31,13 @@ The binary format is little-endian and consists of a 16-byte header (magic, entr
 
 ## Supported Platforms
 
-| Platform | Status |
-|----------|--------|
-| Android  | Stable |
-| Windows  | Stable |
+| Platform | Status | Artifact |
+|----------|--------|----------|
+| Android  | Stable | APK |
+| iOS      | Unsigned (sideload required) | Runner.app |
+| Windows  | Stable | ZIP |
+| macOS    | Stable | ZIP |
+| Linux    | Stable | tar.gz |
 
 ## Getting Started
 
