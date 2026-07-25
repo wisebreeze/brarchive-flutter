@@ -84,13 +84,13 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
           utf8Path.pop_back();
         }
         // Send to the share channel (reused for drag-drop on desktop)
-        flutter::MethodChannel<flutter::EncodableValue>::Create(
+        auto channel = flutter::MethodChannel<flutter::EncodableValue>(
             flutter_controller_->engine()->messenger(),
             "com.wisebreeze.brarchive/share",
-            &flutter::StandardMethodCodec::GetInstance())
-            ->InvokeMethod(
-                "onFileDropped",
-                std::make_unique<flutter::EncodableValue>(utf8Path));
+            &flutter::StandardMethodCodec::GetInstance());
+        channel.InvokeMethod(
+            "onFileDropped",
+            std::make_unique<flutter::EncodableValue>(utf8Path));
       }
       DragFinish(hDrop);
       break;
