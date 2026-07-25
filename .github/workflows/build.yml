@@ -206,8 +206,7 @@ jobs:
       - name: Package Linux app
         run: |
           mkdir -p artifacts
-          cd build/linux/x64/release/bundle
-          tar czf ../../../artifacts/brarchive-linux-${{ steps.bt.outputs.type }}.tar.gz .
+          tar czf artifacts/brarchive-linux-${{ steps.bt.outputs.type }}.tar.gz -C build/linux/x64/release/bundle .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -302,8 +301,7 @@ jobs:
       - name: Package macOS app
         run: |
           mkdir -p artifacts
-          cd build/macos/Build/Products/Release
-          zip -r -y ../../../artifacts/brarchive-macos-release.zip brarchive.app
+          zip -r -y artifacts/brarchive-macos-release.zip build/macos/Build/Products/Release/brarchive.app
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

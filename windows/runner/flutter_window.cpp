@@ -4,6 +4,9 @@
 #include <shobjidl.h>
 #include <windows.h>
 
+#include <flutter/method_channel.h>
+#include <flutter/standard_method_codec.h>
+
 #include "file_picker_plugin.h"
 #include "flutter/generated_plugin_registrant.h"
 
