@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart' as _pathProvider;
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -214,10 +215,30 @@ class _HomeScreenState extends State<HomeScreen> {
     final text = _consoleController.text;
     if (text.isEmpty) return;
     try {
-      await Share.share(text, subject: 'brarchive console log');
+      // Write logs to a temp file and share it as a file attachment,
+      // which is more reliable across platforms than sharing raw text.
+      final tempDir = await _getTempDir();
+      final file = await File('${tempDir.path}/brarchive_log.txt').writeAsString(text);
+      final xFile = XFile(file.path);
+      final result = await Share.shareXFiles(
+        [xFile],
+        subject: 'brarchive console log',
+        text: text,
+      );
+      // Clean up temp file after sharing
+      try { await file.delete(); } catch (_) {}
     } catch (e) {
-      _showSnack(i18n.t('logError', {'error': e.toString()}), isError: true);
+      // Fallback: try plain text share
+      try {
+        await Share.share(text, subject: 'brarchive console log');
+      } catch (e2) {
+        _showSnack(i18n.t('logError', {'error': e2.toString()}), isError: true);
+      }
     }
+  }
+
+  Future<Directory> _getTempDir() async {
+    return await _pathProvider.getTemporaryDirectory();
   }
 
   Future<bool> _showPermissionDialog(I18n i18n) async {
